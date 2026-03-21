@@ -92,7 +92,7 @@ This dashboard uses **contextual filtering instead of removing data**:
 
 ## 📸 Screenshots
 
-(Add your dashboard screenshots here)
+
 
 ---
 
