@@ -1,0 +1,209 @@
+<div class="main-container">
+
+    <h1>Dataset Analytics</h1>
+
+    <style>
+    body {
+        font-family: Arial;
+        margin: 20px;
+        background-color: #f5f5f5;
+    }
+    h1 { color: #333; }
+    h2 { margin-top: 40px; margin-bottom: 10px; font-weight: 600; }
+
+    .kpis { display: flex; gap: 20px; margin-bottom: 30px; }
+    .kpi {
+        flex: 1;
+        background: white;
+        padding: 18px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: 0.2s;
+    }
+    .kpi:hover { transform: translateY(-3px); }
+
+    .chart-container {
+        width: 80%;
+        margin: 40px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        transition: 0.2s;
+    }
+    .chart-container:hover { transform: translateY(-2px); }
+    .chart-container.pie { width: 50%; padding: 15px; }
+    .chart-container canvas { height: 400px !important; }
+
+    .main-container { max-width: 1200px; margin: 30px auto; }
+    .section { margin-top: 50px; }
+    </style>
+
+    <!-- KPI CARDS -->
+    <div class="kpis">
+        <div class="kpi">
+            <div style="color:#888; font-size:13px;">Total Revenue</div>
+            <div id="kpi-total" style="font-size:20px;">{{ total_revenue|floatformat:0 }}</div>
+        </div>
+        <div class="kpi">
+            <div style="color:#888; font-size:13px;">Avg Order Value</div>
+            <div id="kpi-avg" style="font-size:20px;">{{ avg_order|floatformat:0 }}</div>
+        </div>
+        <div class="kpi">
+            <div style="color:#888; font-size:13px;">Top Product</div>
+            <div id="kpi-top" style="font-size:20px;">{{ top_product }}</div>
+        </div>
+    </div>
+
+    <!-- FILTER -->
+    <div style="margin-bottom: 20px;">
+        <label style="font-weight:600;">Filter by Product:</label>
+        <select id="productFilter" style="padding:6px 10px; border-radius:6px;">
+            <option value="all">All</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <h2>📊 Revenue by Product</h2>
+        <div class="chart-container">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🥧 Product Distribution</h2>
+        <div class="chart-container pie">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    const PIE_COLORS = ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0"];
+    const DIM_COLOR  = "rgba(200,200,200,0.3)";
+    const BAR_COLOR  = "rgba(54, 162, 235, 0.6)";
+
+    let originalData = {};
+    let barChart, pieChart;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch("/api/product-sales/")
+            .then(r => r.json())
+            .then(data => {
+                originalData = data;
+                populateDropdown(data.products);
+                renderCharts(data.products, data.sales);
+
+                document.getElementById("productFilter").addEventListener("change", function () {
+                    applyFilter(this.value);
+                });
+            })
+            .catch(err => console.error("ERROR:", err));
+    });
+
+    function populateDropdown(products) {
+        const dropdown = document.getElementById("productFilter");
+        products.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            dropdown.appendChild(opt);
+        });
+    }
+
+    function applyFilter(selected) {
+        const { products, sales } = originalData;
+
+        // --- Bar chart: highlight selected, dim others ---
+        const barColors = products.map(p =>
+            p === selected || selected === "all" ? BAR_COLOR : DIM_COLOR
+        );
+        barChart.data.datasets[0].backgroundColor = barColors;
+        barChart.update();
+
+        // --- Pie chart: highlight selected slice, dim others ---
+        const pieColors = products.map((p, i) =>
+            p === selected || selected === "all" ? PIE_COLORS[i % PIE_COLORS.length] : DIM_COLOR
+        );
+        pieChart.data.datasets[0].backgroundColor = pieColors;
+        pieChart.update();
+
+        // --- KPIs: update to reflect selected product ---
+        updateKPIs(selected);
+    }
+
+    function updateKPIs(selected) {
+        const { products, sales } = originalData;
+
+        let filteredProducts, filteredSales;
+
+        if (selected === "all") {
+            filteredProducts = products;
+            filteredSales    = sales;
+        } else {
+            const i = products.indexOf(selected);
+            filteredProducts = [products[i]];
+            filteredSales    = [sales[i]];
+        }
+
+        const total      = filteredSales.reduce((a, b) => a + b, 0);
+        const avg        = Math.round(total / filteredSales.length);
+        const maxIdx     = filteredSales.indexOf(Math.max(...filteredSales));
+        const topProduct = filteredProducts[maxIdx];
+
+        document.getElementById("kpi-total").innerText = total;
+        document.getElementById("kpi-avg").innerText   = avg;
+        document.getElementById("kpi-top").innerText   = topProduct;
+    }
+
+    function renderCharts(products, sales) {
+        if (barChart) barChart.destroy();
+        if (pieChart) pieChart.destroy();
+
+        const barCtx = document.getElementById("salesChart").getContext("2d");
+        barChart = new Chart(barCtx, {
+            type: "bar",
+            data: {
+                labels: products,
+                datasets: [{
+                    label: "Revenue by Product",
+                    data: sales,
+                    backgroundColor: products.map(() => BAR_COLOR)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: "top" } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                    x: { grid: { display: false } }
+                },
+                animation: { duration: 1200 },
+                interaction: { mode: "index", intersect: false }
+            }
+        });
+
+        const pieCtx = document.getElementById("pieChart").getContext("2d");
+        pieChart = new Chart(pieCtx, {
+            type: "pie",
+            data: {
+                labels: products,
+                datasets: [{
+                    data: sales,
+                    backgroundColor: products.map((_, i) => PIE_COLORS[i % PIE_COLORS.length])
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: "top" } },
+                animation: { duration: 1200 }
+            }
+        });
+    }
+    </script>
+
+</div>

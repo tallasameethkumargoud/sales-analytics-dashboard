@@ -1,0 +1,18 @@
+<h1>Dataset Upload History</h1>
+
+<table border="1">
+<tr>
+<th>Dataset Name</th>
+<th>Uploaded At</th>
+</tr>
+
+{% for dataset in datasets %}
+
+<tr>
+<td>{{ dataset.name }}</td>
+<td>{{ dataset.uploaded_at }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
