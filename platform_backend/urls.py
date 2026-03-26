@@ -16,19 +16,32 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from datasets.views import upload_dataset, view_records, analytics, dataset_history, analytics_api, product_sales_api
+from datasets.views import (
+    signup_view,
+    login_view,
+    logout_view,
+    upload_dataset,
+    preview_dataset,
+    view_records,
+    analytics,
+    dataset_history,
+    analytics_api,
+    product_sales_api,
+    sales_trend_api,
+)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', upload_dataset, name='upload_dataset'),
-]
-
-urlpatterns = [
-    path("", upload_dataset),
-    path("records/", view_records),
-    path("analytics/", analytics),
-    path("datasets/", dataset_history),
-    
-    path("api/analytics/", analytics_api),
-    path("api/product-sales/", product_sales_api),
+    path("admin/",             admin.site.urls),
+    path("signup/",            signup_view,       name="signup"),
+    path("login/",             login_view,        name="login"),
+    path("logout/",            logout_view,       name="logout"),
+    path("",                   upload_dataset,    name="upload"),
+    path("upload/",            upload_dataset,    name="upload_page"),
+    path("preview/",           preview_dataset,   name="preview"),
+    path("records/",           view_records,      name="records"),
+    path("analytics/",         analytics,         name="analytics"),
+    path("datasets/",          dataset_history,   name="datasets"),
+    path("api/analytics/",     analytics_api,     name="analytics_api"),
+    path("api/product-sales/", product_sales_api, name="product_sales_api"),
+    path("api/sales-trend/",   sales_trend_api,   name="sales_trend_api"),
 ]

@@ -1,18 +1,278 @@
-<h1>Dataset Upload History</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dataset History</title>
+    <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-<table border="1">
-<tr>
-<th>Dataset Name</th>
-<th>Uploaded At</th>
-</tr>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #f0f4ff 0%, #f5f5f5 100%);
+        min-height: 100vh;
+    }
 
-{% for dataset in datasets %}
+    /* Navbar */
+    .navbar {
+        background: white;
+        padding: 14px 32px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    .navbar-brand { font-weight: 800; font-size: 17px; color: #1a1a1a; }
+    .navbar-links { display: flex; align-items: center; gap: 8px; }
+    .nav-user {
+        background: #f0f4ff; color: #1976d2;
+        padding: 6px 14px; border-radius: 20px;
+        font-size: 13px; font-weight: 600;
+    }
+    .nav-link {
+        padding: 6px 14px; border-radius: 8px;
+        font-size: 13px; font-weight: 600;
+        text-decoration: none; color: #555; transition: 0.15s;
+    }
+    .nav-link:hover { background: #f5f5f5; color: #333; }
+    .nav-link.active { background: #f0f4ff; color: #1976d2; }
+    .nav-link.danger { color: #e53935; }
+    .nav-link.danger:hover { background: #fff3f3; }
 
-<tr>
-<td>{{ dataset.name }}</td>
-<td>{{ dataset.uploaded_at }}</td>
-</tr>
+    /* Page */
+    .page { padding: 48px 32px; max-width: 1000px; margin: 0 auto; }
 
-{% endfor %}
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+    }
+    .page-title { font-size: 26px; font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px; }
+    .page-sub   { font-size: 14px; color: #888; margin-top: 4px; }
 
-</table>
+    .upload-btn {
+        background: linear-gradient(135deg, #1976d2, #2196F3);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(33,150,243,0.3);
+        transition: 0.2s;
+    }
+    .upload-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(33,150,243,0.4);
+    }
+
+    /* Stats row */
+    .stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 14px;
+        padding: 18px 24px;
+        flex: 1;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        transition: 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .stat-label { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 28px; font-weight: 800; color: #1a1a1a; margin-top: 4px; }
+
+    /* Table */
+    .table-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+    .table-header {
+        padding: 18px 24px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .table-header-title { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { background: linear-gradient(90deg, #1976d2, #2196F3); }
+    th {
+        color: white; padding: 12px 20px;
+        text-align: left; font-weight: 600;
+        font-size: 13px; letter-spacing: 0.2px;
+    }
+    td { padding: 14px 20px; border-bottom: 1px solid #f5f5f5; color: #333; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: 0.15s; }
+    tbody tr:hover td { background: #f8fbff; }
+
+    /* File name cell */
+    .file-cell { display: flex; align-items: center; gap: 12px; }
+    .file-icon-wrap {
+        width: 36px; height: 36px;
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .file-name { font-weight: 600; color: #1a1a1a; }
+    .file-ext  { font-size: 11px; color: #888; margin-top: 2px; }
+
+    /* Timestamp */
+    .timestamp { color: #666; font-size: 13px; }
+    .timestamp-date { font-weight: 600; color: #333; }
+    .timestamp-time { color: #999; font-size: 12px; margin-top: 2px; }
+
+    /* Uploader badge */
+    .uploader-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #f0f4ff;
+        color: #1976d2;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Row number */
+    .row-num {
+        color: #bbb;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #888;
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state p { font-size: 15px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <span class="navbar-brand">📂 Data Platform</span>
+        <div class="navbar-links">
+            <span class="nav-user">👤 {{ user.username }}</span>
+            <a href="/analytics/" class="nav-link">📊 Analytics</a>
+            <a href="/upload/"    class="nav-link">⬆️ Upload</a>
+            <a href="/datasets/"  class="nav-link active">🗂️ History</a>
+            <a href="/logout/"    class="nav-link danger">🚪 Logout</a>
+        </div>
+    </nav>
+
+    <div class="page">
+
+        <!-- Page header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🗂️ Dataset History</h1>
+                <p class="page-sub">All datasets uploaded to the platform</p>
+            </div>
+            <a href="/upload/" class="upload-btn">⬆️ Upload New</a>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Uploads</div>
+                <div class="stat-value">{{ datasets|length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Latest Upload</div>
+                <div class="stat-value" style="font-size:16px; margin-top:8px;">
+                    {% if datasets %}
+                        {{ datasets.0.uploaded_at|date:"M d, Y" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Uploaded By</div>
+                <div class="stat-value" style="font-size:16px; margin-top:8px;">
+                    {{ user.username }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <span>📋</span>
+                <span class="table-header-title">Upload Log</span>
+            </div>
+
+            {% if datasets %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>File Name</th>
+                        <th>Uploaded By</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dataset in datasets %}
+                    <tr>
+                        <td class="row-num">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="file-cell">
+                                <div class="file-icon-wrap">📄</div>
+                                <div>
+                                    <div class="file-name">{{ dataset.name }}</div>
+                                    <div class="file-ext">CSV Dataset</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="uploader-badge">
+                                👤 {{ dataset.uploaded_by }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="timestamp-date">
+                                {{ dataset.uploaded_at|date:"M d, Y" }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="timestamp-time" style="font-size:13px; color:#666;">
+                                {{ dataset.uploaded_at|date:"H:i:s" }} UTC
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p>No datasets uploaded yet.</p>
+                <a href="/upload/" class="upload-btn">Upload your first dataset</a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</body>
+</html>
