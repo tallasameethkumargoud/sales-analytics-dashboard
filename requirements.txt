@@ -1,0 +1,9 @@
+Django==6.0.3
+djangorestframework
+psycopg2-binary
+pandas
+numpy
+groq
+scikit-learn
+gunicorn
+requests

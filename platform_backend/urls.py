@@ -28,6 +28,11 @@ from datasets.views import (
     analytics_api,
     product_sales_api,
     sales_trend_api,
+    sales_forecast_api,
+    ai_chat_api,
+    ai_sentiment_api,
+    export_csv,
+    ai_recommendations_api,
 )
 
 urlpatterns = [
@@ -44,4 +49,12 @@ urlpatterns = [
     path("api/analytics/",     analytics_api,     name="analytics_api"),
     path("api/product-sales/", product_sales_api, name="product_sales_api"),
     path("api/sales-trend/",   sales_trend_api,   name="sales_trend_api"),
+    path("api/sales-forecast/", sales_forecast_api, name="sales_forecast_api"),
+    path("api/ai-chat/", ai_chat_api, name="ai_chat_api"),
+    path("api/ai-sentiment/", ai_sentiment_api, name="ai_sentiment_api"),
+    path("export/csv/", export_csv, name="export_csv"),
+    path("api/ai-recommendations/", ai_recommendations_api, name="ai_recommendations_api"),
+
+
+
 ]
