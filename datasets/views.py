@@ -376,7 +376,12 @@ INSTRUCTIONS:
 
     try:
         from groq import Groq
-        client = Groq(api_key=settings.GROQ_API_KEY)
+        import httpx
+        client = Groq(
+            api_key=settings.GROQ_API_KEY,
+            http_client=httpx.Client(verify=False)
+        )
+
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -424,7 +429,12 @@ Use exact numbers and be data-driven."""
 
     try:
         from groq import Groq
-        client = Groq(api_key=settings.GROQ_API_KEY)
+        import httpx
+        client = Groq(
+            api_key=settings.GROQ_API_KEY,
+            http_client=httpx.Client(verify=False)
+        )
+
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -577,7 +587,12 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
 
     try:
         from groq import Groq
-        client = Groq(api_key=settings.GROQ_API_KEY)
+        import httpx
+        client = Groq(
+            api_key=settings.GROQ_API_KEY,
+            http_client=httpx.Client(verify=False)
+        )
+        
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
