@@ -6,14 +6,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')
-
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')]
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'http://localhost',
     'https://192.168.1.99',
     'http://192.168.1.99',
-] + [f'https://{h}' for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if '.railway.app' in h]
+] + [f'https://{h.strip()}' for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if '.railway.app' in h]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
