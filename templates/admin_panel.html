@@ -139,7 +139,8 @@
                             <option value="analyst" {% if u.role == 'analyst' %}selected{% endif %}>📊 Analyst</option>
                             <option value="viewer"  {% if u.role == 'viewer'  %}selected{% endif %}>👁️ Viewer</option>
                         </select>
-                        {% endif %}
+                        {% endif %}git rm --cached .env
+                        
                     </td>
                     <td>{{ u.dataset_count }}</td>
                     <td>{{ u.record_count }}</td>
