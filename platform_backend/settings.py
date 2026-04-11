@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -7,13 +8,13 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')
 
-# Add these lines below it
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'http://localhost',
     'https://192.168.1.99',
     'http://192.168.1.99',
-]
+] + [f'https://{h}' for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if '.railway.app' in h]
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
@@ -56,16 +57,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'platform_backend.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME':     os.environ.get('DB_NAME', 'data_platform'),
-        'USER':     os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres123'),
-        'HOST':     os.environ.get('DB_HOST', 'db'),
-        'PORT':     os.environ.get('DB_PORT', '5432'),
+# ─── Database ────────────────────────────────────────────────────────────────
+# Uses DATABASE_URL on Railway, falls back to individual vars locally
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME':     os.environ.get('DB_NAME', 'data_platform'),
+            'USER':     os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres123'),
+            'HOST':     os.environ.get('DB_HOST', 'db'),
+            'PORT':     os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
