@@ -15,7 +15,7 @@ from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 
 from .decorators import get_user_role, role_required, api_role_required
-from .models import Dataset, Record, Customer, Product, RecommendationInteraction
+from .models import Dataset, Record, Customer, Product, RecommendationInteraction, UserProfile
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -146,6 +146,17 @@ def preview_dataset(request):
 
 
 # ─── Pages ────────────────────────────────────────────────────────────────────
+
+def get_role_context(request):
+    role = get_user_role(request.user)
+    return {
+        "user": request.user,
+        "user_role": role,
+        "is_admin":   role == "admin",
+        "is_analyst": role == "analyst",
+        "is_viewer":  role == "viewer",
+    }
+
 
 def analytics(request):
     if not request.user.is_authenticated:
@@ -313,6 +324,21 @@ def export_csv(request):
     return response
 
 
+# ─── AI Helpers ───────────────────────────────────────────────────────────────
+
+def get_groq_client():
+    """Create Groq client with proper SSL handling for Railway."""
+    import httpx
+    from groq import Groq
+    return Groq(
+        api_key=settings.GROQ_API_KEY,
+        http_client=httpx.Client(
+            verify=False,
+            timeout=httpx.Timeout(30.0)
+        )
+    )
+
+
 # ─── AI APIs ──────────────────────────────────────────────────────────────────
 
 def ai_chat_api(request):
@@ -375,13 +401,8 @@ INSTRUCTIONS:
 - If asked something not in the data, say so clearly"""
 
     try:
-        from groq import Groq
-        import httpx
-        client = Groq(
-            api_key=settings.GROQ_API_KEY,
-            http_client=httpx.Client(verify=False)
-        )
-
+        client = get_groq_client()
+        print(f"GROQ KEY: {settings.GROQ_API_KEY[:10]}...")
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -394,7 +415,10 @@ INSTRUCTIONS:
         return JsonResponse({"answer": completion.choices[0].message.content.strip()})
     except Exception as e:
         traceback.print_exc()
-        return JsonResponse({"error": f"AI error: {str(e)}"}, status=500)
+        error_type = type(e).__name__
+        error_msg  = str(e)
+        print(f"GROQ ERROR: {error_type}: {error_msg}")
+        return JsonResponse({"error": f"AI error: {error_type}: {error_msg}"}, status=500)
 
 
 def ai_sentiment_api(request):
@@ -428,13 +452,7 @@ Provide:
 Use exact numbers and be data-driven."""
 
     try:
-        from groq import Groq
-        import httpx
-        client = Groq(
-            api_key=settings.GROQ_API_KEY,
-            http_client=httpx.Client(verify=False)
-        )
-
+        client = get_groq_client()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -447,11 +465,10 @@ Use exact numbers and be data-driven."""
         return JsonResponse({"analysis": completion.choices[0].message.content.strip(), "total_customers": len(customer_data)})
     except Exception as e:
         traceback.print_exc()
-        return JsonResponse({"error": f"AI error: {str(e)}"}, status=500)
+        return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
 
 
 def track_recommendation(request):
-    """Track when user clicks/applies/dismisses a recommendation."""
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
     if request.method != "POST":
@@ -501,14 +518,11 @@ def ai_recommendations_api(request):
         p["revenue_share"] = round((p["total_sales"] / total_revenue) * 100, 1) if total_revenue else 0
         p["vs_avg"] = round(((p["avg_sale"] - avg_order) / avg_order) * 100, 1) if avg_order else 0
 
-    # ── User interaction history ──────────────────────────────────
     interactions = RecommendationInteraction.objects.filter(
         user=request.user
     ).order_by("-created_at")
     interactions_list = list(interactions[:50])
     interactions = interactions.filter(pk__in=[i.pk for i in interactions_list])
-
-
 
     if interactions.exists():
         top_actions = list(
@@ -523,9 +537,9 @@ def ai_recommendations_api(request):
             interactions.filter(interaction__in=["clicked", "applied"])
             .values("product__name").annotate(cnt=Count("id")).order_by("-cnt")[:3]
         )
-        top_action_names    = [a["action_type"] for a in top_actions]
-        dismissed_names     = [a["action_type"] for a in dismissed_actions]
-        top_product_names   = [p["product__name"] for p in top_products]
+        top_action_names  = [a["action_type"] for a in top_actions]
+        dismissed_names   = [a["action_type"] for a in dismissed_actions]
+        top_product_names = [p["product__name"] for p in top_products]
 
         interaction_summary = f"""
 USER BEHAVIOR HISTORY (last {interactions.count()} interactions):
@@ -586,13 +600,7 @@ Rules: star=top 30% revenue, growth=above avg orders, underperform=below avg sha
 Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per product. JSON only."""
 
     try:
-        from groq import Groq
-        import httpx
-        client = Groq(
-            api_key=settings.GROQ_API_KEY,
-            http_client=httpx.Client(verify=False)
-        )
-        
+        client = get_groq_client()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -617,33 +625,18 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
         return JsonResponse(data)
     except Exception as e:
         traceback.print_exc()
-        return JsonResponse({"error": f"AI error: {str(e)}"}, status=500)
-    
-
-# ─── Role-based access helpers ────────────────────────────────────────────────
-
-def get_role_context(request):
-    """Add role info to every template context."""
-    role = get_user_role(request.user)
-    return {
-        "user": request.user,
-        "user_role": role,
-        "is_admin":   role == "admin",
-        "is_analyst": role == "analyst",
-        "is_viewer":  role == "viewer",
-    }
+        return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
 
 
 # ─── Admin Panel ──────────────────────────────────────────────────────────────
 
 @role_required('admin')
 def admin_panel(request):
-    """Admin-only user management panel."""
     users = User.objects.all().order_by("date_joined")
     user_list = []
     for u in users:
         role = get_user_role(u)
-        record_count = Record.objects.filter(dataset__uploaded_by=u).count()
+        record_count  = Record.objects.filter(dataset__uploaded_by=u).count()
         dataset_count = Dataset.objects.filter(uploaded_by=u).count()
         user_list.append({
             "id":            u.id,
@@ -657,7 +650,7 @@ def admin_panel(request):
         })
     return render(request, "admin_panel.html", {
         **get_role_context(request),
-        "user_list": user_list,
+        "user_list":      user_list,
         "total_users":    users.count(),
         "total_records":  Record.objects.count(),
         "total_datasets": Dataset.objects.count(),
@@ -666,7 +659,6 @@ def admin_panel(request):
 
 @api_role_required('admin')
 def update_user_role(request):
-    """Admin API: change a user's role."""
     if request.method != "POST":
         return JsonResponse({"error": "POST required."}, status=405)
     body     = json.loads(request.body)
@@ -688,7 +680,6 @@ def update_user_role(request):
 
 @api_role_required('admin')
 def delete_user_api(request):
-    """Admin API: delete a user."""
     if request.method != "POST":
         return JsonResponse({"error": "POST required."}, status=405)
     body    = json.loads(request.body)
