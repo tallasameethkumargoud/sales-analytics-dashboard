@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: linear-gradient(135deg, #f0f4ff 0%, #f5f5f5 100%); min-height: 100vh; }
+    .navbar { background: white; padding: 14px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .navbar-brand { font-weight: 800; font-size: 17px; color: #1a1a1a; }
+    .navbar-links { display: flex; align-items: center; gap: 8px; }
+    .nav-user { background: #f0f4ff; color: #1976d2; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+    .nav-link { padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; color: #555; transition: 0.15s; }
+    .nav-link:hover { background: #f5f5f5; }
+    .nav-link.active { background: #f0f4ff; color: #1976d2; }
+    .nav-link.danger { color: #e53935; }
+    .nav-link.danger:hover { background: #fff3f3; }
+    .page { padding: 40px 32px; max-width: 1100px; margin: 0 auto; }
+    .page-title { font-size: 26px; font-weight: 800; color: #1a1a1a; margin-bottom: 6px; }
+    .page-sub { color: #888; font-size: 14px; margin-bottom: 28px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: white; border-radius: 14px; padding: 20px 24px; flex: 1; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .stat-label { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; }
+    .stat-value { font-size: 28px; font-weight: 800; color: #1a1a1a; margin-top: 4px; }
+    .table-card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+    .table-header { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; font-size: 15px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { background: linear-gradient(90deg, #1976d2, #2196F3); }
+    th { color: white; padding: 12px 20px; text-align: left; font-weight: 600; font-size: 13px; }
+    td { padding: 14px 20px; border-bottom: 1px solid #f5f5f5; color: #333; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fbff; }
+    .role-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .role-admin   { background: #fff3e0; color: #e65100; }
+    .role-analyst { background: #e3f2fd; color: #1565c0; }
+    .role-viewer  { background: #f3e5f5; color: #6a1b9a; }
+    .role-select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-delete { background: #fff3f3; color: #e53935; border: 1px solid #ffcdd2; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+    .btn-delete:hover { background: #e53935; color: white; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1976d2; color: white; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: none; z-index: 999; }
+    
+    @media (max-width: 768px) {
+        .navbar { padding: 12px 16px; }
+        .navbar-links { display: none; }
+        .page { padding: 24px 12px; }
+        .stats { flex-direction: column; gap: 12px; }
+        .table-card { overflow-x: auto; }
+        table { min-width: 600px; font-size: 12px; }
+        th, td { padding: 8px 10px; }
+    }
+    .hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:4px; }
+    .hamburger span { display:block; width:24px; height:2px; background:#333; border-radius:2px; transition:0.3s; }
+    .mobile-menu { display:none; position:fixed; top:56px; left:0; right:0; background:white; box-shadow:0 4px 20px rgba(0,0,0,0.12); padding:16px; z-index:99; flex-direction:column; gap:8px; }
+    .mobile-menu a { display:block; padding:10px 14px; border-radius:8px; font-size:14px; font-weight:600; text-decoration:none; color:#333; }
+    .mobile-menu a:hover { background:#f5f5f5; }
+    .mobile-menu .danger { color:#e53935; }
+    @media (max-width: 768px) {
+        .navbar-links { display:none !important; }
+        .hamburger { display:flex; }
+        .navbar { padding:12px 16px; }
+        .page { padding:24px 12px; }
+        .stats { flex-direction:column; gap:12px; }
+        .table-card { overflow-x:auto; }
+        table { min-width:600px; font-size:12px; }
+        th, td { padding:8px 10px; }
+    }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <span class="navbar-brand">📂 Data Platform</span>
+    <div class="navbar-links">
+        <span class="nav-user">👑 {{ user.username }} (Admin)</span>
+        <a href="/analytics/" class="nav-link">📊 Analytics</a>
+        <a href="/admin-panel/" class="nav-link active">⚙️ Admin</a>
+        <a href="/datasets/"   class="nav-link">🗂️ History</a>
+        <a href="/logout/"     class="nav-link danger">🚪 Logout</a>
+    </div>
+    <div class="hamburger" onclick="toggleMenu()" id="hamburger">
+        <span></span><span></span><span></span>
+    </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+    <span style="background:#fff3e0;color:#e65100;padding:10px 14px;border-radius:8px;font-weight:600;">👑 {{ user.username }} — ADMIN</span>
+    <a href="/analytics/">📊 Analytics</a>
+    <a href="/admin-panel/">⚙️ Admin Panel</a>
+    <a href="/datasets/">🗂️ History</a>
+    <a href="/logout/" class="danger">🚪 Logout</a>
+</div>
+
+<div class="page">
+    <h1 class="page-title">⚙️ Admin Panel</h1>
+    <p class="page-sub">Manage users, roles, and platform data</p>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value">{{ total_users }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Datasets</div>
+            <div class="stat-value">{{ total_datasets }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Records</div>
+            <div class="stat-value">{{ total_records }}</div>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-header">👥 User Management</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Datasets</th>
+                    <th>Records</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in user_list %}
+                <tr id="user-row-{{ u.id }}">
+                    <td style="color:#bbb;">{{ forloop.counter }}</td>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td style="color:#888;">{{ u.email|default:"—" }}</td>
+                    <td>
+                        {% if u.username == user.username %}
+                            <span class="role-badge role-{{ u.role }}">{{ u.role }}</span>
+                        {% else %}
+                        <select class="role-select" onchange="updateRole({{ u.id }}, this.value)">
+                            <option value="admin"   {% if u.role == 'admin'   %}selected{% endif %}>👑 Admin</option>
+                            <option value="analyst" {% if u.role == 'analyst' %}selected{% endif %}>📊 Analyst</option>
+                            <option value="viewer"  {% if u.role == 'viewer'  %}selected{% endif %}>👁️ Viewer</option>
+                        </select>
+                        {% endif %}
+                    </td>
+                    <td>{{ u.dataset_count }}</td>
+                    <td>{{ u.record_count }}</td>
+                    <td style="font-size:12px;color:#888;">{{ u.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        {% if u.username != user.username %}
+                        <button class="btn-delete" onclick="deleteUser({{ u.id }}, '{{ u.username }}')">🗑️ Delete</button>
+                        {% else %}
+                        <span style="color:#bbb;font-size:12px;">You</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function getCookie(name) {
+    const val = document.cookie.split(";").find(c => c.trim().startsWith(name + "="));
+    return val ? val.split("=")[1] : "";
+}
+
+function showToast(msg, color="#1976d2") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.background = color;
+    t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 3000);
+}
+
+function updateRole(userId, newRole) {
+    fetch("/api/update-user-role/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+        body: JSON.stringify({ user_id: userId, role: newRole })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { showToast("❌ " + data.error, "#e53935"); return; }
+        showToast(`✅ ${data.username} is now ${data.role}`);
+    });
+}
+
+function deleteUser(userId, username) {
+    if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+    fetch("/api/delete-user/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { showToast("❌ " + data.error, "#e53935"); return; }
+        document.getElementById(`user-row-${userId}`).remove();
+        showToast(`✅ User deleted`);
+    });
+}
+function toggleMenu() {
+    const menu = document.getElementById("mobileMenu");
+    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+document.addEventListener("click", function(e) {
+    const menu = document.getElementById("mobileMenu");
+    const hamburger = document.getElementById("hamburger");
+    if (menu && hamburger && !menu.contains(e.target) && !hamburger.contains(e.target)) {
+        menu.style.display = "none";
+    }
+});
+</script>
+</body>
+</html>

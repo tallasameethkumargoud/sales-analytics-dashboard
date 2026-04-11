@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dataset History</title>
     <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -161,6 +162,33 @@
     }
     .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
     .empty-state p { font-size: 15px; margin-bottom: 20px; }
+
+    @media (max-width: 768px) {
+        .navbar { padding: 12px 16px; }
+        .navbar-links { display: none; }
+        .page { padding: 24px 12px; }
+        .stats { flex-direction: column; gap: 12px; }
+        .page-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+        table { font-size: 12px; }
+        th, td { padding: 10px 10px; }
+        .file-name { font-size: 13px; }
+    }
+    .hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:4px; }
+    .hamburger span { display:block; width:24px; height:2px; background:#333; border-radius:2px; transition:0.3s; }
+    .mobile-menu { display:none; position:fixed; top:56px; left:0; right:0; background:white; box-shadow:0 4px 20px rgba(0,0,0,0.12); padding:16px; z-index:99; flex-direction:column; gap:8px; }
+    .mobile-menu a { display:block; padding:10px 14px; border-radius:8px; font-size:14px; font-weight:600; text-decoration:none; color:#333; }
+    .mobile-menu a:hover { background:#f5f5f5; }
+    .mobile-menu .danger { color:#e53935; }
+    @media (max-width: 768px) {
+        .navbar-links { display:none !important; }
+        .hamburger { display:flex; }
+        .navbar { padding:12px 16px; }
+        .page { padding:24px 12px; }
+        .stats { flex-direction:column; gap:12px; }
+        .page-header { flex-direction:column; gap:12px; align-items:flex-start; }
+        table { font-size:12px; }
+        th, td { padding:10px 10px; }
+    }
     </style>
 </head>
 <body>
@@ -175,7 +203,18 @@
             <a href="/datasets/"  class="nav-link active">🗂️ History</a>
             <a href="/logout/"    class="nav-link danger">🚪 Logout</a>
         </div>
+        <div class="hamburger" onclick="toggleMenu()" id="hamburger">
+            <span></span><span></span><span></span>
+        </div>
     </nav>
+
+<div class="mobile-menu" id="mobileMenu">
+    <span style="background:#f0f4ff;color:#1976d2;padding:10px 14px;border-radius:8px;font-weight:600;">👤 {{ user.username }}</span>
+    <a href="/analytics/">📊 Analytics</a>
+    <a href="/upload/">⬆️ Upload</a>
+    <a href="/datasets/">🗂️ History</a>
+    <a href="/logout/" class="danger">🚪 Logout</a>
+</div>
 
     <div class="page">
 
@@ -274,5 +313,18 @@
         </div>
     </div>
 
+    <script>
+    function toggleMenu() {
+        const menu = document.getElementById("mobileMenu");
+        menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+    }
+    document.addEventListener("click", function(e) {
+        const menu = document.getElementById("mobileMenu");
+        const hamburger = document.getElementById("hamburger");
+        if (menu && hamburger && !menu.contains(e.target) && !hamburger.contains(e.target)) {
+            menu.style.display = "none";
+        }
+    });
+    </script>
 </body>
 </html>

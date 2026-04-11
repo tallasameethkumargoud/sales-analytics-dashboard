@@ -1,4 +1,5 @@
 <div class="main-container">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
     body { font-family: Arial; margin: 0; background-color: #f5f5f5; }
@@ -27,19 +28,145 @@
     .range-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
     input[type="range"] { width: 180px; accent-color: #2196F3; }
     .range-val { font-weight: 700; color: #2196F3; min-width: 55px; }
+    .viewer-lock { background: #fff3e0; border: 1px solid #ffe0b2; border-radius: 12px; padding: 24px; text-align: center; margin-top: 40px; }
+    /* ═══ MOBILE RESPONSIVE ═══ */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 4px;
+}
+.hamburger span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: #333;
+    border-radius: 2px;
+    transition: 0.3s;
+}
+.mobile-menu {
+    display: none;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    padding: 16px;
+    z-index: 99;
+    flex-direction: column;
+    gap: 8px;
+}
+.mobile-menu a, .mobile-menu span {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    color: #333;
+}
+.mobile-menu a:hover { background: #f5f5f5; }
+.mobile-menu .danger { color: #e53935; }
+
+@media (max-width: 768px) {
+    .navbar { padding: 12px 16px; }
+    .navbar-links { display: none !important; }
+    .hamburger { display: flex; }
+    .main-container { padding: 0 12px 40px; }
+
+    .kpis {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .kpi { padding: 14px 16px; }
+
+    .chart-container {
+        width: 100% !important;
+        margin: 20px 0;
+        padding: 12px;
+    }
+    .chart-container canvas { height: 260px !important; }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 14px;
+    }
+    input[type="range"] { width: 140px; }
+
+    h2 { font-size: 16px; }
+    .section { margin-top: 30px; }
+
+    /* AI sections */
+    .section > div[style*="width:80%"] {
+        width: 100% !important;
+    }
+
+    /* Recommendation cards */
+    div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Chat */
+    #chatMessages { height: 240px; }
+
+    /* Export bar */
+    div[style*="justify-content:flex-end"] {
+        justify-content: center !important;
+        flex-wrap: wrap;
+    }
+
+    /* Viewer lock */
+    .viewer-lock { padding: 20px 16px; }
+}
     </style>
 
+    <!-- ═══ NAVBAR ═══ -->
     <nav class="navbar">
         <span class="navbar-brand">📂 Data Platform</span>
         <div class="navbar-links">
-            <span class="nav-user">👤 {{ user.username }}</span>
+            <span class="nav-user">
+                {% if is_admin %}👑{% elif is_analyst %}📊{% else %}👁️{% endif %}
+                {{ user.username }}
+                <span style="font-size:10px;opacity:0.7;margin-left:4px;">{{ user_role|upper }}</span>
+            </span>
             <a href="/analytics/" class="nav-link active">📊 Analytics</a>
+            {% if is_admin %}
+            <a href="/admin-panel/" class="nav-link" style="color:#e65100;">⚙️ Admin</a>
+            {% endif %}
             <a href="/datasets/"  class="nav-link">🗂️ History</a>
+            {% if is_admin or is_analyst %}
             <a href="/upload/"    class="nav-link">⬆️ Upload</a>
+            {% endif %}
             <a href="/logout/"    class="nav-link danger">🚪 Logout</a>
+        </div>
+        <!-- Hamburger -->
+        <div class="hamburger" onclick="toggleMenu()" id="hamburger">
+            <span></span><span></span><span></span>
         </div>
     </nav>
 
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <span style="background:#f0f4ff;color:#1976d2;">
+            {% if is_admin %}👑{% elif is_analyst %}📊{% else %}👁️{% endif %}
+            {{ user.username }} — {{ user_role|upper }}
+        </span>
+        <a href="/analytics/">📊 Analytics</a>
+        {% if is_admin %}
+        <a href="/admin-panel/" style="color:#e65100;">⚙️ Admin Panel</a>
+        {% endif %}
+        <a href="/datasets/">🗂️ History</a>
+        {% if is_admin or is_analyst %}
+        <a href="/upload/">⬆️ Upload</a>
+        {% endif %}
+        <a href="/logout/" class="danger">🚪 Logout</a>
+    </div>
+
+    <!-- ═══ KPIs ═══ -->
     <div class="kpis" style="margin-top:24px;">
         <div class="kpi">
             <div style="color:#888;font-size:13px;">Total Revenue</div>
@@ -55,7 +182,8 @@
         </div>
     </div>
 
-    <!-- EXPORT BAR -->
+    <!-- ═══ EXPORT BAR (admin + analyst only) ═══ -->
+    {% if is_admin or is_analyst %}
     <div style="display:flex;gap:12px;margin-bottom:24px;justify-content:flex-end;">
         <a href="/export/csv/" style="background:linear-gradient(135deg,#43a047,#66bb6a);color:white;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(67,160,71,0.3);transition:0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
             📥 Export CSV
@@ -64,7 +192,9 @@
             📄 Export PDF
         </button>
     </div>
+    {% endif %}
 
+    <!-- ═══ FILTERS ═══ -->
     <div class="filter-bar">
         <div>
             <label>Filter by Product:</label><br>
@@ -86,6 +216,7 @@
         </div>
     </div>
 
+    <!-- ═══ CHARTS (all roles) ═══ -->
     <div class="section">
         <h2>📊 Revenue by Product</h2>
         <div class="chart-container"><canvas id="salesChart"></canvas></div>
@@ -105,6 +236,11 @@
         <div class="chart-container pie"><canvas id="pieChart"></canvas></div>
     </div>
 
+    <!-- ═══ AI SECTIONS (admin + analyst only) ═══ -->
+    {% if is_admin or is_analyst %}
+
+    {% if is_admin or is_analyst %}
+
     <div class="section">
         <h2>🧠 AI Customer Analysis</h2>
         <div style="width:80%;margin:0 auto;background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:24px;">
@@ -119,18 +255,15 @@
     <div class="section">
         <h2>🤖 Ask AI About Your Data</h2>
         <div style="width:80%;margin:0 auto;background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;">
-
-            <!-- Suggested questions -->
             <div style="padding:14px 16px;background:#f0f4ff;border-bottom:1px solid #e0eaff;display:flex;gap:8px;flex-wrap:wrap;">
                 <span style="font-size:12px;color:#888;font-weight:600;align-self:center;">Try:</span>
-                {% for q in "Revenue by product|Average spend|Top performing product|Which product needs improvement?|Give me a full summary|How is my revenue trending?"%}{% endfor %}
                 <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Show top 3 products by revenue</button>
                 <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Who is my best customer?</button>
                 <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Which product needs improvement?</button>
                 <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Compare all products side by side</button>
                 <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Give me a full executive summary</button>
-                <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Show revenue trend analysis</button>            </div>
-
+                <button onclick="askSuggestion(this)" style="background:white;border:1px solid #c5d8ff;border-radius:20px;padding:5px 12px;font-size:12px;color:#1976d2;cursor:pointer;transition:0.15s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='white'">Show revenue trend analysis</button>
+            </div>
             <div id="chatMessages" style="height:320px;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;background:#fafafa;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                     <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1976d2,#42a5f5);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div>
@@ -150,7 +283,6 @@
         </div>
     </div>
 
-    <!-- ═══ AI RECOMMENDATIONS ENGINE ═══ -->
     <div class="section">
         <h2>🔥 AI Product Recommendations</h2>
         <div style="width:80%;margin:0 auto;background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);padding:24px;">
@@ -165,7 +297,25 @@
         </div>
     </div>
 
+    {% else %}
+    <!-- VIEWER LOCK -->
+    <div class="section" style="background:#fff3e0;border:1px solid #ffe0b2;border-radius:16px;padding:32px;text-align:center;margin-top:40px;">
+        <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:20px;font-weight:800;color:#e65100;margin-bottom:8px;">Viewer Access</div>
+        <div style="color:#888;font-size:14px;">AI Chat, Customer Analysis and Recommendations are available to Analysts and Admins only.</div>
+        <div style="margin-top:12px;font-size:13px;color:#bbb;">Contact your Admin to upgrade your role.</div>
+    </div>
+    {% endif %}
 
+    {% else %}
+    <!-- ═══ VIEWER LOCK ═══ -->
+    <div class="viewer-lock section">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:#e65100;margin-bottom:8px;">Viewer Access</div>
+        <div style="color:#888;font-size:14px;">AI features — Chat, Customer Analysis, and Recommendations — are available to Analysts and Admins only.</div>
+        <div style="margin-top:16px;font-size:13px;color:#bbb;">Contact your Admin to upgrade your role.</div>
+    </div>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -193,6 +343,20 @@
         document.getElementById("productFilter").addEventListener("change", function () { applyProductFilter(this.value); });
         document.getElementById("minRange").addEventListener("input", function () { document.getElementById("minVal").innerText = "$" + this.value; applyRangeFilter(); });
         document.getElementById("maxRange").addEventListener("input", function () { document.getElementById("maxVal").innerText = "$" + this.value; applyRangeFilter(); });
+    });
+
+    function toggleMenu() {
+        const menu = document.getElementById("mobileMenu");
+        const open = menu.style.display === "flex";
+        menu.style.display = open ? "none" : "flex";
+    }
+    // Close menu when clicking outside
+    document.addEventListener("click", function(e) {
+        const menu = document.getElementById("mobileMenu");
+        const hamburger = document.getElementById("hamburger");
+        if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
+            menu.style.display = "none";
+        }
     });
 
     function fetchAndRender(min, max) {
@@ -256,8 +420,8 @@
 
     function renderTrendChart(dates, sales, forecastDates = [], forecastSales = []) {
         if (trendChart) trendChart.destroy();
-        const allLabels   = [...dates, ...forecastDates];
-        const actualData  = [...sales, ...forecastDates.map(() => null)];
+        const allLabels    = [...dates, ...forecastDates];
+        const actualData   = [...sales, ...forecastDates.map(() => null)];
         const forecastData = [...dates.map((_,i) => i === dates.length-1 ? sales[sales.length-1] : null), ...forecastSales];
         trendChart = new Chart(document.getElementById("trendChart").getContext("2d"), {
             type: "line",
@@ -352,16 +516,12 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const W = doc.internal.pageSize.getWidth();
-
-        // Header banner
         doc.setFillColor(25, 118, 210);
         doc.rect(0, 0, W, 36, "F");
         doc.setFontSize(22); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold");
         doc.text("Sales Analytics Report", 14, 18);
         doc.setFontSize(10); doc.setFont("helvetica","normal");
         doc.text("Generated: " + new Date().toLocaleString(), 14, 28);
-
-        // KPI Cards
         const total = document.getElementById("kpi-total").innerText;
         const avg   = document.getElementById("kpi-avg").innerText;
         const top   = document.getElementById("kpi-top").innerText;
@@ -380,21 +540,16 @@
             doc.text(k.value, kx+4, 63);
             kx += 62;
         });
-
-        // Revenue by Product table
         doc.setFontSize(13); doc.setTextColor(33,33,33); doc.setFont("helvetica","bold");
         doc.text("Revenue by Product", 14, 86);
         doc.setDrawColor(25,118,210); doc.setLineWidth(0.5);
         doc.line(14, 88, W-14, 88);
-
         let y = 96;
         doc.setFillColor(25,118,210);
         doc.rect(14, y-5, W-28, 8, "F");
         doc.setFontSize(9); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold");
-        doc.text("#", 16, y); doc.text("Product", 28, y);
-        doc.text("Revenue", 110, y); doc.text("Share %", 155, y);
+        doc.text("#", 16, y); doc.text("Product", 28, y); doc.text("Revenue", 110, y); doc.text("Share %", 155, y);
         y += 8;
-
         const totalSales = originalData.sales ? originalData.sales.reduce((a,b) => a+b, 0) : 0;
         doc.setFont("helvetica","normal");
         if (originalData.products) {
@@ -402,128 +557,122 @@
                 doc.setFillColor(...(i%2===0 ? [245,248,255] : [255,255,255]));
                 doc.rect(14, y-5, W-28, 8, "F");
                 doc.setTextColor(60,60,60); doc.setFontSize(9);
-                doc.text(String(i+1), 16, y);
-                doc.text(p, 28, y);
+                doc.text(String(i+1), 16, y); doc.text(p, 28, y);
                 doc.text("$" + originalData.sales[i].toLocaleString(), 110, y);
-                const pct = totalSales ? ((originalData.sales[i]/totalSales)*100).toFixed(1)+"%" : "—";
-                doc.text(pct, 155, y);
+                doc.text(totalSales ? ((originalData.sales[i]/totalSales)*100).toFixed(1)+"%" : "—", 155, y);
                 y += 8;
             });
         }
-
-        // Summary
         y += 6;
         doc.setFontSize(13); doc.setTextColor(33,33,33); doc.setFont("helvetica","bold");
         doc.text("Summary", 14, y);
         doc.setDrawColor(25,118,210); doc.line(14, y+2, W-14, y+2);
         y += 10;
         doc.setFontSize(10); doc.setFont("helvetica","normal"); doc.setTextColor(80,80,80);
-        [
-            `• Total Revenue: ${total}`,
-            `• Average Order Value: ${avg}`,
-            `• Top Product: ${top}`,
-            `• Products tracked: ${originalData.products ? originalData.products.length : 0}`,
-            `• Report generated by: Data Operations Platform`
-        ].forEach(line => { doc.text(line, 18, y); y += 8; });
-
-        // Footer
+        [`• Total Revenue: ${total}`, `• Average Order Value: ${avg}`, `• Top Product: ${top}`, `• Products tracked: ${originalData.products ? originalData.products.length : 0}`, `• Report generated by: Data Operations Platform`].forEach(line => { doc.text(line, 18, y); y += 8; });
         doc.setFillColor(25,118,210);
         doc.rect(0, 282, W, 15, "F");
         doc.setFontSize(8); doc.setTextColor(255,255,255);
         doc.text("Data Operations Platform  |  Confidential  |  " + new Date().toLocaleDateString(), 14, 290);
-
         doc.save("sales_report_" + new Date().toISOString().slice(0,10) + ".pdf");
     }
 
     function runRecommendations() {
-    const btn = document.getElementById("recBtn");
-    const results = document.getElementById("recResults");
-    btn.innerHTML = "⏳ Analyzing products...";
-    btn.disabled = true;
-    results.style.display = "none";
+        const btn = document.getElementById("recBtn");
+        const results = document.getElementById("recResults");
+        btn.innerHTML = "⏳ Analyzing your behavior...";
+        btn.disabled = true;
+        results.style.display = "none";
+        fetch("/api/ai-recommendations/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+            body: JSON.stringify({})
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.innerHTML = "🔥 Regenerate Recommendations";
+            btn.disabled = false;
+            if (data.error) { results.innerHTML = `<div style="color:red;padding:16px;">Error: ${data.error}</div>`; results.style.display = "block"; return; }
+            renderRecommendations(data.recommendations, data.interaction_stats);
+        })
+        .catch(() => { btn.innerHTML = "🔥 Generate AI Recommendations"; btn.disabled = false; results.innerHTML = `<div style="color:red;padding:16px;">Something went wrong.</div>`; results.style.display = "block"; });
+    }
 
-    fetch("/api/ai-recommendations/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-        body: JSON.stringify({})
-    })
-    .then(r => r.json())
-    .then(data => {
-        btn.innerHTML = "🔥 Generate AI Recommendations";
-        btn.disabled = false;
-        if (data.error) {
-            results.innerHTML = `<div style="color:red;">Error: ${data.error}</div>`;
-            results.style.display = "block";
-            return;
-        }
-        renderRecommendations(data.recommendations);
-    })
-    .catch(err => {
-        btn.innerHTML = "🔥 Generate AI Recommendations";
-        btn.disabled = false;
-        results.innerHTML = `<div style="color:red;">Something went wrong.</div>`;
+    function trackAction(product, actionType, interaction, impact) {
+        fetch("/api/track-recommendation/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+            body: JSON.stringify({ product, action_type: actionType, interaction, impact })
+        }).catch(() => {});
+    }
+
+    function renderRecommendations(recs, stats) {
+        const results = document.getElementById("recResults");
+        const isPersonalized = stats && stats.personalized;
+        const statusColors = {
+            star:         { bg: "#fff8e1", border: "#ffc107", badge_bg: "#fff3cd" },
+            growth:       { bg: "#f0fff4", border: "#43a047", badge_bg: "#e8f5e9" },
+            underperform: { bg: "#fff3f3", border: "#ef5350", badge_bg: "#ffebee" },
+            risk:         { bg: "#fce4ec", border: "#e91e63", badge_bg: "#fce4ec" }
+        };
+        const impactColors = { high: "#e53935", medium: "#ff9800", low: "#43a047" };
+        let banner = isPersonalized
+            ? `<div style="background:linear-gradient(135deg,#1976d2,#42a5f5);color:white;border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;"><div style="font-size:24px;">🧠</div><div><div style="font-weight:700;font-size:15px;">Personalized for You</div><div style="font-size:13px;opacity:0.9;">Based on your ${stats.total} past interactions</div></div></div>`
+            : `<div style="background:#f0f4ff;border:1px solid #c5d8ff;border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;"><div style="font-size:24px;">💡</div><div><div style="font-weight:700;font-size:15px;color:#1976d2;">First Time Analysis</div><div style="font-size:13px;color:#555;">Click actions to teach the AI your preferences!</div></div></div>`;
+        let html = banner + `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;">`;
+        recs.forEach(rec => {
+            const colors = statusColors[rec.status] || statusColors["underperform"];
+            const actionsHtml = rec.actions.map(a => `
+                <div class="rec-action" style="background:white;border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:3px solid ${impactColors[a.impact]||'#999'};box-shadow:0 1px 4px rgba(0,0,0,0.06);cursor:pointer;transition:0.2s;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'" onclick="handleActionClick(this,'${rec.product}','${a.type}','${a.impact}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <span style="font-weight:700;font-size:13px;">${a.icon} ${a.title}</span>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <span style="font-size:10px;font-weight:700;color:${impactColors[a.impact]};background:${impactColors[a.impact]}18;padding:2px 8px;border-radius:10px;text-transform:uppercase;">${a.impact} impact</span>
+                            <button onclick="event.stopPropagation();dismissAction(this,'${rec.product}','${a.type}','${a.impact}')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:0 4px;" title="Dismiss">✕</button>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:#666;">${a.reason}</div>
+                </div>`).join("");
+            html += `
+            <div style="background:${colors.bg};border:1.5px solid ${colors.border};border-radius:16px;padding:20px;transition:0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                    <div><div style="font-size:17px;font-weight:800;color:#1a1a1a;">${rec.product}</div><div style="font-size:12px;color:#888;margin-top:2px;">${rec.order_count} orders · ${rec.revenue_share}% of revenue</div></div>
+                    <span style="background:${colors.badge_bg};border:1px solid ${colors.border};border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap;">${rec.badge}</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-bottom:14px;">
+                    <div style="flex:1;background:white;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:11px;color:#888;font-weight:600;">REVENUE</div><div style="font-size:16px;font-weight:800;color:#1a1a1a;">$${Number(rec.revenue).toLocaleString()}</div></div>
+                    <div style="flex:1;background:white;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);"><div style="font-size:11px;color:#888;font-weight:600;">AVG SALE</div><div style="font-size:16px;font-weight:800;color:#1a1a1a;">$${Number(rec.avg_sale).toLocaleString()}</div></div>
+                </div>
+                <div style="font-size:12px;color:#555;background:white;border-radius:8px;padding:10px;margin-bottom:14px;font-style:italic;box-shadow:0 1px 4px rgba(0,0,0,0.06);">💡 ${rec.summary}</div>
+                <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Recommended Actions ${rec.personalized ? '<span style="background:#e3f2fd;color:#1976d2;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;">✨ Personalized</span>' : ''}</div>
+                ${actionsHtml}
+            </div>`;
+        });
+        html += `</div>`;
+        results.innerHTML = html;
         results.style.display = "block";
-    });
-}
+    }
 
-function renderRecommendations(recs) {
-    const results = document.getElementById("recResults");
-    const statusColors = {
-        star:         { bg: "#fff8e1", border: "#ffc107", badge_bg: "#fff3cd" },
-        growth:       { bg: "#f0fff4", border: "#43a047", badge_bg: "#e8f5e9" },
-        underperform: { bg: "#fff3f3", border: "#ef5350", badge_bg: "#ffebee" },
-        risk:         { bg: "#fce4ec", border: "#e91e63", badge_bg: "#fce4ec" }
-    };
-    const impactColors = { high: "#e53935", medium: "#ff9800", low: "#43a047" };
+    function handleActionClick(el, product, actionType, impact) {
+        trackAction(product, actionType, "applied", impact);
+        el.style.background = "linear-gradient(135deg,#e8f5e9,#f1f8e9)";
+        el.style.borderLeftColor = "#43a047";
+        if (!el.querySelector(".check-mark")) {
+            const check = document.createElement("div");
+            check.className = "check-mark";
+            check.style.cssText = "color:#43a047;font-size:11px;font-weight:700;margin-top:4px;";
+            check.textContent = "✅ Applied — AI will prioritize this next time";
+            el.appendChild(check);
+        }
+        trackAction(product, actionType, "clicked", impact);
+    }
 
-    let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;">`;
-
-    recs.forEach(rec => {
-        const colors = statusColors[rec.status] || statusColors["underperform"];
-        const actionsHtml = rec.actions.map(a => `
-            <div style="background:white;border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:3px solid ${impactColors[a.impact] || '#999'};box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                    <span style="font-weight:700;font-size:13px;">${a.icon} ${a.title}</span>
-                    <span style="font-size:10px;font-weight:700;color:${impactColors[a.impact]};background:${impactColors[a.impact]}18;padding:2px 8px;border-radius:10px;text-transform:uppercase;">${a.impact} impact</span>
-                </div>
-                <div style="font-size:12px;color:#666;">${a.reason}</div>
-            </div>
-        `).join("");
-
-        html += `
-        <div style="background:${colors.bg};border:1.5px solid ${colors.border};border-radius:16px;padding:20px;transition:0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-                <div>
-                    <div style="font-size:17px;font-weight:800;color:#1a1a1a;">${rec.product}</div>
-                    <div style="font-size:12px;color:#888;margin-top:2px;">${rec.order_count} orders · ${rec.revenue_share}% of revenue</div>
-                </div>
-                <span style="background:${colors.badge_bg};border:1px solid ${colors.border};border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap;">${rec.badge}</span>
-            </div>
-
-            <div style="display:flex;gap:10px;margin-bottom:14px;">
-                <div style="flex:1;background:white;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-                    <div style="font-size:11px;color:#888;font-weight:600;">REVENUE</div>
-                    <div style="font-size:16px;font-weight:800;color:#1a1a1a;">$${rec.revenue.toLocaleString()}</div>
-                </div>
-                <div style="flex:1;background:white;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-                    <div style="font-size:11px;color:#888;font-weight:600;">AVG SALE</div>
-                    <div style="font-size:16px;font-weight:800;color:#1a1a1a;">$${rec.avg_sale.toLocaleString()}</div>
-                </div>
-            </div>
-
-            <div style="font-size:12px;color:#555;background:white;border-radius:8px;padding:10px;margin-bottom:14px;font-style:italic;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-                💡 ${rec.summary}
-            </div>
-
-            <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Recommended Actions</div>
-            ${actionsHtml}
-        </div>`;
-    });
-
-    html += `</div>`;
-    results.innerHTML = html;
-    results.style.display = "block";
-}
+    function dismissAction(btn, product, actionType, impact) {
+        trackAction(product, actionType, "dismissed", impact);
+        const card = btn.closest(".rec-action");
+        card.style.opacity = "0"; card.style.transform = "translateX(-10px)"; card.style.transition = "0.3s";
+        setTimeout(() => card.remove(), 300);
+    }
     </script>
 
 </div>

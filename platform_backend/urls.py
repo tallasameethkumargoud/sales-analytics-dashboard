@@ -33,6 +33,10 @@ from datasets.views import (
     ai_sentiment_api,
     export_csv,
     ai_recommendations_api,
+    track_recommendation,
+    admin_panel,
+    update_user_role,
+    delete_user_api,
 )
 
 urlpatterns = [
@@ -54,6 +58,10 @@ urlpatterns = [
     path("api/ai-sentiment/", ai_sentiment_api, name="ai_sentiment_api"),
     path("export/csv/", export_csv, name="export_csv"),
     path("api/ai-recommendations/", ai_recommendations_api, name="ai_recommendations_api"),
+    path("admin-panel/",          admin_panel,       name="admin_panel"),
+    path("api/update-user-role/", update_user_role,  name="update_user_role"),
+    path("api/delete-user/",      delete_user_api,   name="delete_user_api"),
+    
 
 
 

@@ -5,10 +5,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')
 
 # Add these lines below it
-CSRF_TRUSTED_ORIGINS = ['https://localhost', 'http://localhost']
+CSRF_TRUSTED_ORIGINS = [
+    'https://localhost',
+    'http://localhost',
+    'https://192.168.1.99',
+    'http://192.168.1.99',
+]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
