@@ -1,111 +1,194 @@
-# 📊 Sales Analytics Dashboard (Django + Chart.js)
+# 🚀 Data Operations Platform
 
-An interactive analytics dashboard built using **Django (backend)** and **Chart.js (frontend)** to visualize sales data and enable dynamic user-driven insights.
+A full-stack, production-grade **AI-powered Sales Analytics Platform** built with Django, PostgreSQL, Docker, and Groq LLaMA 3.3.
+
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![Django](https://img.shields.io/badge/Django-6.0.3-green)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![AI](https://img.shields.io/badge/AI-Groq%20LLaMA%203.3-purple)
 
 ---
 
-## 🚀 Features
+## ✨ Features
 
-- 📈 KPI Cards (Total Revenue, Average Order Value, Top Product)
-- 📊 Bar Chart for product-wise revenue
-- 🥧 Pie Chart for product distribution
-- 🔍 Dynamic product filtering with highlight-based UX
-- ⚡ Real-time updates without page reload
-- 🔗 REST API integration using Django
+### 📊 Analytics Dashboard
+- KPI Cards — Total Revenue, Avg Order Value, Top Product
+- Interactive Bar Chart, Line Chart, Pie Chart (Chart.js)
+- Product & revenue range filters
+- CSV + PDF export
+
+### 🤖 AI Features (Groq LLaMA 3.3)
+- **Smart AI Chat** — Ask natural language questions about your data
+- **AI Sales Forecast** — Linear regression trend prediction
+- **AI Customer Analysis** — Pattern detection & segmentation
+- **AI Recommendations Engine** — Per-product strategies (price, promote, upsell)
+- **User Learning System** — Tracks clicks/dismissals, personalizes like Netflix/Amazon
+
+### 👥 Multi-User Roles
+| Role | Permissions |
+|------|-------------|
+| 👑 Admin | Full access, manage users, see all data |
+| 📊 Analyst | Upload CSV, use AI, view analytics |
+| 👁️ Viewer | Read-only dashboard |
+
+### 🔐 Security & Infrastructure
+- JWT-based session auth with password validation
+- Docker + Docker Compose (3 containers)
+- Gunicorn (3 workers) + Nginx reverse proxy
+- HTTPS with SSL certificates
+- Secrets managed via `.env` file
+
+### 📱 Mobile Responsive
+- Hamburger menu on mobile
+- Stacked KPI cards, full-width charts
+- Works on iPhone/Android
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Django, Django REST Framework  
-- **Frontend:** HTML, CSS, JavaScript  
-- **Visualization:** Chart.js  
-- **Database:** SQLite  
+| Layer | Technology |
+|-------|-----------|
+| Backend | Django 6.0.3, Python 3.12 |
+| Database | PostgreSQL 15 |
+| AI | Groq LLaMA 3.3-70b |
+| Data Processing | Pandas, NumPy, Scikit-learn |
+| Frontend | HTML, CSS, JavaScript, Chart.js, jsPDF |
+| Server | Gunicorn + Nginx |
+| Containerization | Docker, Docker Compose |
+
+---
+
+## 🏗️ Architecture
+
+```
+Browser (HTTPS)
+      ↓
+   Nginx (port 443/80)     ← SSL termination + static files
+      ↓
+  Gunicorn (port 8000)     ← 3 worker processes
+      ↓
+  Django 6.0.3             ← App logic + AI APIs
+      ↓
+  PostgreSQL 15            ← Production database
+```
 
 ---
 
 ## 📂 Project Structure
-sales-analytics-dashboard/
-│
-├── datasets/ # Django app (models, views, APIs)
-├── templates/ # HTML templates
-├── static/ # CSS & JS files
-├── manage.py
-├── requirements.txt
-└── README.md
 
+```
+platform_backend/
+├── datasets/
+│   ├── models.py          # Dataset, Record, Customer, Product, UserProfile
+│   ├── views.py           # All views + AI APIs
+│   ├── decorators.py      # Role-based access control
+│   └── migrations/
+├── templates/
+│   ├── analytics.html     # Main dashboard
+│   ├── upload.html        # CSV upload
+│   ├── datasets.html      # Dataset history
+│   ├── admin_panel.html   # User management
+│   ├── login.html
+│   └── signup.html
+├── platform_backend/
+│   ├── settings.py
+│   └── urls.py
+├── nginx/
+│   └── nginx.conf
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── .env                   # Never commit this!
+```
 
 ---
 
-## ▶️ How to Run Locally
+## ▶️ Run Locally with Docker
 
 ### 1. Clone the repository
+```bash
 git clone https://github.com/tallasameethkumargoud/sales-analytics-dashboard.git
-
 cd sales-analytics-dashboard
+```
 
+### 2. Create `.env` file
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
 
-### 2. Create virtual environment
-python -m venv venv
-source venv/bin/activate # Mac/Linux
-
-
-### 3. Install dependencies
-pip install -r requirements.txt
-
+### 3. Build and start
+```bash
+docker-compose up --build
+```
 
 ### 4. Run migrations
-python manage.py migrate
+```bash
+docker-compose exec web python manage.py migrate
+```
 
-### 5. Start server
+### 5. Create superuser
+```bash
+docker-compose exec web python manage.py createsuperuser
+```
 
-
-python manage.py runserver
-
-
-Open in browser:
-
-http://127.0.0.1:8000/
-
-
----
-
-## 📊 API Endpoints
-
-| Endpoint | Description |
-|--------|-------------|
-| `/api/analytics/` | KPI metrics |
-| `/api/product-sales/` | Product-wise revenue data |
+### 6. Open in browser
+```
+https://localhost
+```
 
 ---
 
-## 🧠 Key Highlight
+## 📡 API Endpoints
 
-This dashboard uses **contextual filtering instead of removing data**:
-
-- Selected product → highlighted  
-- Other products → faded  
-
-👉 This helps users retain full context while focusing on specific insights.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analytics/` | GET | KPI metrics |
+| `/api/product-sales/` | GET | Product revenue data |
+| `/api/sales-trend/` | GET | Daily revenue trend |
+| `/api/sales-forecast/` | GET | AI forecast (7 days) |
+| `/api/ai-chat/` | POST | AI data analyst chat |
+| `/api/ai-sentiment/` | POST | Customer analysis |
+| `/api/ai-recommendations/` | POST | Product recommendations |
+| `/api/track-recommendation/` | POST | Track user interactions |
+| `/api/update-user-role/` | POST | Admin: change user role |
+| `/api/delete-user/` | POST | Admin: delete user |
+| `/export/csv/` | GET | Export data as CSV |
 
 ---
 
-## 📸 Screenshots
+## 📋 CSV Format
 
-
+Your CSV must have these columns:
+```
+customer_name, product, amount
+John Doe, Laptop, 1200
+Jane Smith, Phone, 900
+```
 
 ---
 
-## 📌 Future Improvements
+## 🔒 Environment Variables
 
-- Multi-select filters (product + date)
-- Export data (CSV / PDF)
-- User authentication
-- Deployment (AWS / Render)
+```env
+SECRET_KEY=your-secret-key
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+DB_NAME=data_platform
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+DB_HOST=db
+DB_PORT=5432
+
+GROQ_API_KEY=your-groq-api-key
+```
 
 ---
 
 ## 👤 Author
 
 **Sameeth Kumar Goud Talla**  
-GitHub: https://github.com/tallasameethkumargoud
+GitHub: [@tallasameethkumargoud](https://github.com/tallasameethkumargoud)
