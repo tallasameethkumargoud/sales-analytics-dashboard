@@ -9,3 +9,7 @@ gunicorn
 requests
 dj-database-url
 httpx
+pytest-django
+pytest
+coverage
+flake8
