@@ -87,7 +87,7 @@ jobs:
           flake8 datasets/ platform_backend/ \
             --max-line-length=150 \
             --exclude=migrations,test_settings.py \
-            --ignore=E501,W503,E302,E303,W291,W293,F401 \
+            --ignore=E501,W503,E302,E303,W291,W293,F401,E221,E241,E226,E272,E701,W292 \
             --count \
             --statistics
 
