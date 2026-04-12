@@ -91,7 +91,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '').strip()
+print(f"GROQ KEY LOADED: '{GROQ_API_KEY[:10] if GROQ_API_KEY else 'EMPTY'}'")
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_NAME = 'sessionid'
