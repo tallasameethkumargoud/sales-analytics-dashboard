@@ -83,7 +83,7 @@ jobs:
         run: pip install flake8
 
       - name: 🔍 Run flake8
-        run: |
+        run: flake8 datasets/ platform_backend/
           flake8 datasets/ platform_backend/ \
             --max-line-length=150 \
             --exclude=migrations,test_settings.py \
