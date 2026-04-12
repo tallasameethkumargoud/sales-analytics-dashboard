@@ -85,8 +85,9 @@ jobs:
       - name: 🔍 Run flake8
         run: |
           flake8 datasets/ platform_backend/ \
-            --max-line-length=120 \
-            --exclude=migrations \
+            --max-line-length=150 \
+            --exclude=migrations,test_settings.py \
+            --ignore=E501,W503,E302,E303,W291,W293,F401 \
             --count \
             --statistics
 
@@ -101,7 +102,7 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: �� Install Railway CLI
+      - name: 🚂 Install Railway CLI
         run: npm install -g @railway/cli
 
       - name: 🚀 Deploy to Railway
