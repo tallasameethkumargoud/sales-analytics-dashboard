@@ -1,5 +1,17 @@
 import os
 
+
+import dj_database_url
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')]
+
+# ─── Sentry (AFTER DEBUG is defined) ─────────────────────────────
+
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -13,14 +25,6 @@ if SENTRY_DSN:
         environment="production" if not DEBUG else "development",
     )
     
-import dj_database_url
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')]
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'http://localhost',
