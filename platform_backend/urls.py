@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.http import HttpResponse
 from datasets.views import (
     signup_view,
     login_view,
@@ -61,6 +62,7 @@ urlpatterns = [
     path("admin-panel/",          admin_panel,       name="admin_panel"),
     path("api/update-user-role/", update_user_role,  name="update_user_role"),
     path("api/delete-user/",      delete_user_api,   name="delete_user_api"),
+    path("sentry-debug/", lambda request: 1/0, name="sentry_debug"),
     
 
 
