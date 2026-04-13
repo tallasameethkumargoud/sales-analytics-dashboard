@@ -13,3 +13,5 @@ pytest-django
 pytest
 coverage
 flake8
+factory-boy
+faker
