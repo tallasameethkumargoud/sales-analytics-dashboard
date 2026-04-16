@@ -769,3 +769,52 @@ def delete_user_api(request):
         return JsonResponse({"status": "deleted"})
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found."}, status=404)
+    
+
+# ─── Health Check ────────────────────────────────────────────────────────────
+
+import platform
+from django.utils import timezone
+from datetime import datetime
+
+APP_START_TIME = timezone.now()
+
+
+def health_check(request):
+    """Health check — DB status, uptime, version, system info."""
+    # Database check
+    db_status = {"connected": False}
+    try:
+        from django.db import connection
+        db_start = time.time()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        db_status = {
+            "connected": True,
+            "response_ms": round((time.time() - db_start) * 1000, 1),
+            "engine": connection.vendor,
+        }
+    except Exception as e:
+        db_status = {"connected": False, "error": str(e)}
+
+    # Uptime
+    now = timezone.now()
+    uptime_delta = now - APP_START_TIME
+    uptime_seconds = int(uptime_delta.total_seconds())
+    hours, remainder = divmod(uptime_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    return JsonResponse({
+        "status": "healthy" if db_status["connected"] else "unhealthy",
+        "version": "1.1.0",
+        "timestamp": now.isoformat(),
+        "uptime": f"{hours}h {minutes}m {seconds}s",
+        "uptime_seconds": uptime_seconds,
+        "database": db_status,
+        "groq_api": {"configured": bool(settings.GROQ_API_KEY)},
+        "system": {
+            "python": platform.python_version(),
+            "django": "6.0.3",
+            "platform": platform.system(),
+        },
+    }, status=200 if db_status["connected"] else 503)

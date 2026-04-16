@@ -38,6 +38,7 @@ from datasets.views import (
     admin_panel,
     update_user_role,
     delete_user_api,
+    health_check,
 )
 
 urlpatterns = [
@@ -63,6 +64,8 @@ urlpatterns = [
     path("admin-panel/",          admin_panel,       name="admin_panel"),
     path("api/update-user-role/", update_user_role,  name="update_user_role"),
     path("api/delete-user/",      delete_user_api,   name="delete_user_api"),
+    path("health/", health_check, name="health_check"),
+
     
 
 
