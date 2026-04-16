@@ -1,10 +1,13 @@
 import pandas as pd
-import traceback
+import logging
+import time
 import numpy as np
 from datetime import timedelta
 import json
 import urllib.request
 import csv
+
+
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
@@ -16,6 +19,9 @@ from django.conf import settings
 
 from .decorators import get_user_role, role_required, api_role_required
 from .models import Dataset, Record, Customer, Product, RecommendationInteraction, UserProfile
+
+
+logger = logging.getLogger("app")
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -116,7 +122,12 @@ def upload_dataset(request):
                 "redirect": "/analytics/"
             })
         except Exception as e:
-            traceback.print_exc()
+            logger.exception("upload_failed", extra={
+                "request_id": getattr(request, "request_id", "unknown"),
+                "user_id": request.user.id,
+                "username": request.user.username,
+                "error_type": type(e).__name__,
+            })
             return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -402,7 +413,17 @@ INSTRUCTIONS:
 
     try:
         client = get_groq_client()
-        print(f"GROQ KEY: {settings.GROQ_API_KEY[:10]}...")
+        logger.info("ai_chat_request", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "username": request.user.username,
+            "endpoint": "/api/ai-chat/",
+            "question_length": len(question),
+            "records_count": total_orders,
+            "products_count": len(product_data),
+            "customers_count": len(customer_data),
+        })
+        ai_start = time.time()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -412,14 +433,25 @@ INSTRUCTIONS:
             max_tokens=500,
             temperature=0.3
         )
+        ai_duration = round((time.time() - ai_start) * 1000, 1)
+        logger.info("ai_chat_success", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-chat/",
+            "duration_ms": ai_duration,
+            "model": "llama-3.3-70b-versatile",
+        })
         return JsonResponse({"answer": completion.choices[0].message.content.strip()})
     except Exception as e:
-        traceback.print_exc()
-        error_type = type(e).__name__
-        error_msg  = str(e)
-        print(f"GROQ ERROR: {error_type}: {error_msg}")
-        return JsonResponse({"error": f"AI error: {error_type}: {error_msg}"}, status=500)
-
+        ai_duration = round((time.time() - ai_start) * 1000, 1) if 'ai_start' in dir() else 0
+        logger.exception("ai_chat_failed", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-chat/",
+            "duration_ms": ai_duration,
+            "error_type": type(e).__name__,
+        })
+        return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
 
 def ai_sentiment_api(request):
     if not request.user.is_authenticated:
@@ -453,6 +485,13 @@ Use exact numbers and be data-driven."""
 
     try:
         client = get_groq_client()
+        logger.info("ai_sentiment_request", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-sentiment/",
+            "customers_count": len(customer_data),
+        })
+        ai_start = time.time()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -462,9 +501,24 @@ Use exact numbers and be data-driven."""
             max_tokens=600,
             temperature=0.3
         )
+        ai_duration = round((time.time() - ai_start) * 1000, 1)
+        logger.info("ai_sentiment_success", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-sentiment/",
+            "duration_ms": ai_duration,
+            "model": "llama-3.3-70b-versatile",
+        })
         return JsonResponse({"analysis": completion.choices[0].message.content.strip(), "total_customers": len(customer_data)})
     except Exception as e:
-        traceback.print_exc()
+        ai_duration = round((time.time() - ai_start) * 1000, 1) if 'ai_start' in dir() else 0
+        logger.exception("ai_sentiment_failed", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-sentiment/",
+            "duration_ms": ai_duration,
+            "error_type": type(e).__name__,
+        })
         return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
 
 
@@ -601,6 +655,14 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
 
     try:
         client = get_groq_client()
+        logger.info("ai_recommendations_request", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-recommendations/",
+            "products_count": len(product_data),
+            "personalized": interactions.exists(),
+        })
+        ai_start = time.time()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -622,11 +684,26 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
             "total": interactions.count(),
             "personalized": interactions.exists()
         }
+        ai_duration = round((time.time() - ai_start) * 1000, 1)
+        logger.info("ai_recommendations_success", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-recommendations/",
+            "duration_ms": ai_duration,
+            "model": "llama-3.3-70b-versatile",
+            "personalized": interactions.exists(),
+        })
         return JsonResponse(data)
     except Exception as e:
-        traceback.print_exc()
+        ai_duration = round((time.time() - ai_start) * 1000, 1) if 'ai_start' in dir() else 0
+        logger.exception("ai_recommendations_failed", extra={
+            "request_id": getattr(request, "request_id", "unknown"),
+            "user_id": request.user.id,
+            "endpoint": "/api/ai-recommendations/",
+            "duration_ms": ai_duration,
+            "error_type": type(e).__name__,
+        })
         return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
-
 
 # ─── Admin Panel ──────────────────────────────────────────────────────────────
 

@@ -51,6 +51,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'datasets.middleware.logging_middleware.StructuredLoggingMiddleware',  # ← ADD THIS
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -110,7 +111,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '').strip()
-print(f"GROQ KEY LOADED: '{GROQ_API_KEY[:10] if GROQ_API_KEY else 'EMPTY'}'")
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_NAME = 'sessionid'
@@ -118,3 +118,75 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_AGE = 1209600
+
+# ─── Structured Logging ──────────────────────────────────────────────────────
+# JSON in production (searchable by Railway, Datadog, Grafana)
+# Human-readable in development (easy to read in terminal)
+
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+
+if DEBUG:
+    # Development: human-readable
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '[{asctime}] {levelname} {name} | {message}',
+                'style': '{',
+                'datefmt': '%H:%M:%S',
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'app': {
+                'handlers': ['console'],
+                'level': LOG_LEVEL,
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console'],
+                'level': 'WARNING',
+                'propagate': False,
+            },
+        },
+    }
+else:
+    # Production: JSON format
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'json': {
+                '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+                'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+                'rename_fields': {
+                    'asctime': 'timestamp',
+                    'levelname': 'level',
+                },
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'json',
+            },
+        },
+        'loggers': {
+            'app': {
+                'handlers': ['console'],
+                'level': LOG_LEVEL,
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console'],
+                'level': 'WARNING',
+                'propagate': False,
+            },
+        },
+    }
