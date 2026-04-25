@@ -15,11 +15,18 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    container_name: data_platform_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     container_name: data_platform_web
     restart: always
-    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn platform_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn platform_backend.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120"
     volumes:
       - .:/app
       - static_data:/app/staticfiles
@@ -30,6 +37,7 @@ services:
       - .env
     depends_on:
       - db
+      - redis
 
   nginx:
     image: nginx:alpine

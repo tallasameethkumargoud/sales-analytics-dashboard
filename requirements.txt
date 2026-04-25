@@ -16,3 +16,8 @@ flake8
 factory-boy
 faker
 sentry-sdk
+django-redis
+redis
+django-redis
+redis
+python-json-logger

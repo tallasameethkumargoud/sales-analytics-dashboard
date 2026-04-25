@@ -12,3 +12,11 @@ DATABASES = {
 GROQ_API_KEY = 'test-key'
 SECRET_KEY = 'test-secret-key'
 DEBUG = True
+
+
+# Use dummy cache for tests (no Redis needed)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+    }
+}

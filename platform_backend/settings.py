@@ -7,7 +7,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = True  # Changed to True for debugging
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')]
 
 # ─── Sentry (AFTER DEBUG is defined) ─────────────────────────────
@@ -125,68 +125,54 @@ SESSION_COOKIE_AGE = 1209600
 
 LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 
-if DEBUG:
-    # Development: human-readable
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '[{asctime}] {levelname} {name} | {message}',
-                'style': '{',
-                'datefmt': '%H:%M:%S',
-            },
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name} | {message}',
+            'style': '{',
+            'datefmt': '%H:%M:%S',
         },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'verbose',
-            },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
-        'loggers': {
-            'app': {
-                'handlers': ['console'],
-                'level': LOG_LEVEL,
-                'propagate': False,
-            },
-            'django.request': {
-                'handlers': ['console'],
-                'level': 'WARNING',
-                'propagate': False,
-            },
+    },
+    'loggers': {
+        'app': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
         },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+# ─── Redis Cache ─────────────────────────────────────────────────
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "IGNORE_EXCEPTIONS": True,  # fall back to DB if Redis is down
+        },
+        "KEY_PREFIX": "dataplatform",
+        "TIMEOUT": 300,  # 5 minutes default
     }
-else:
-    # Production: JSON format
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'json': {
-                '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-                'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
-                'rename_fields': {
-                    'asctime': 'timestamp',
-                    'levelname': 'level',
-                },
-            },
-        },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'json',
-            },
-        },
-        'loggers': {
-            'app': {
-                'handlers': ['console'],
-                'level': LOG_LEVEL,
-                'propagate': False,
-            },
-            'django.request': {
-                'handlers': ['console'],
-                'level': 'WARNING',
-                'propagate': False,
-            },
-        },
-    }
+}
+
+# Use Redis for sessions too
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"

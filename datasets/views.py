@@ -16,6 +16,7 @@ from django.db.models import Sum, Avg, Count
 from django.db.models.functions import TruncDate
 from django.http import JsonResponse, HttpResponse
 from django.conf import settings
+from django.core.cache import cache
 
 from .decorators import get_user_role, role_required, api_role_required
 from .models import Dataset, Record, Customer, Product, RecommendationInteraction, UserProfile
@@ -115,6 +116,12 @@ def upload_dataset(request):
                     product_name=row["product"],
                     amount=row["amount"],
                 )
+            
+            # ── Clear user's cache when new data is uploaded ─────────────────────
+            cache.delete(f"product_sales_{request.user.id}_None_None")
+            cache.delete(f"sales_trend_{request.user.id}")
+            cache.delete(f"sales_forecast_{request.user.id}")
+
             return JsonResponse({
                 "success": True,
                 "dataset_id": dataset.id,
@@ -129,6 +136,8 @@ def upload_dataset(request):
                 "error_type": type(e).__name__,
             })
             return JsonResponse({"error": str(e)}, status=500)
+        
+
 
 
 def preview_dataset(request):
@@ -210,25 +219,42 @@ def dataset_history(request):
 def analytics_api(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
+
+    cache_key = f"analytics_{request.user.id}"
+    cached = cache.get(cache_key)
+    if cached:
+        print(f"✅ Cache HIT: {cache_key}")
+        return JsonResponse(cached)
+
+    print(f"❌ Cache MISS: {cache_key}")
     records = Record.objects.filter(dataset__uploaded_by=request.user)
     total_revenue = records.aggregate(total=Sum("amount"))["total"] or 0
-    avg_order = records.aggregate(avg=Avg("amount"))["avg"] or 0
-    top_product = (
+    avg_order     = records.aggregate(avg=Avg("amount"))["avg"] or 0
+    top_product   = (
         records.values("product")
         .annotate(total_sales=Sum("amount"))
         .order_by("-total_sales")
         .first()
     )
-    return JsonResponse({
+    data = {
         "total_revenue": total_revenue,
         "average_order_value": avg_order,
         "top_product": top_product["product__name"] if top_product else None
-    })
+    }
+    cache.set(cache_key, data, timeout=300)
+    return JsonResponse(data)
 
 
 def sales_trend_api(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
+
+    cache_key = f"sales_trend_{request.user.id}"
+    cached    = cache.get(cache_key)
+    if cached:
+        print(f"CACHE HIT: {cache_key}")
+        return JsonResponse(cached)
+
     trend_data = (
         Record.objects
         .filter(dataset__uploaded_by=request.user)
@@ -237,36 +263,62 @@ def sales_trend_api(request):
         .annotate(total_sales=Sum("amount"))
         .order_by("date")
     )
-    return JsonResponse({
+    data = {
         "dates": [e["date"].strftime("%Y-%m-%d") for e in trend_data],
         "sales": [e["total_sales"] for e in trend_data]
-    })
+    }
+
+    cache.set(cache_key, data, timeout=300)
+    print(f"CACHE MISS: {cache_key} — stored in Redis")
+    return JsonResponse(data)
 
 
 def product_sales_api(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
+
     min_amount = request.GET.get("min")
     max_amount = request.GET.get("max")
+
+    # ── Cache key unique per user + filters ──────────────────────
+    cache_key = f"product_sales_{request.user.id}_{min_amount}_{max_amount}"
+    cached    = cache.get(cache_key)
+    if cached:
+        print(f"CACHE HIT: {cache_key}")
+        return JsonResponse(cached)
+
     queryset = Record.objects.filter(dataset__uploaded_by=request.user)
     if min_amount:
         queryset = queryset.filter(amount__gte=float(min_amount))
     if max_amount:
         queryset = queryset.filter(amount__lte=float(max_amount))
+
     product_data = (
         queryset.values("product__name")
         .annotate(total_sales=Sum("amount"))
         .order_by("-total_sales")
     )
-    return JsonResponse({
+    data = {
         "products": [p["product__name"] for p in product_data],
         "sales":    [p["total_sales"]   for p in product_data]
-    })
+    }
+
+    # ── Store in cache for 5 minutes ─────────────────────────────
+    cache.set(cache_key, data, timeout=300)
+    print(f"CACHE MISS: {cache_key} — stored in Redis")
+    return JsonResponse(data)
 
 
 def sales_forecast_api(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
+
+    cache_key = f"sales_forecast_{request.user.id}"
+    cached    = cache.get(cache_key)
+    if cached:
+        print(f"CACHE HIT: {cache_key}")
+        return JsonResponse(cached)
+
     trend_data = (
         Record.objects
         .filter(dataset__uploaded_by=request.user)
@@ -279,8 +331,9 @@ def sales_forecast_api(request):
         return JsonResponse({
             "forecast_dates": [],
             "forecast_sales": [],
-            "explanation": "Not enough data to forecast. Upload more datasets over multiple days."
+            "explanation": "Not enough data to forecast."
         })
+
     dates = [entry["date"] for entry in trend_data]
     sales = [float(entry["total_sales"]) for entry in trend_data]
     x = np.array(range(len(sales)), dtype=float)
@@ -306,13 +359,18 @@ def sales_forecast_api(request):
         f"The model forecasts {outlook} over the next 7 days, "
         f"with predicted revenue ranging from ${min(forecast_sales):,.0f} to ${max(forecast_sales):,.0f}."
     )
-    return JsonResponse({
+    data = {
         "forecast_dates": forecast_dates,
         "forecast_sales": forecast_sales,
-        "explanation": explanation,
-        "trend_slope": round(m, 2),
-        "avg_sales": avg_sales
-    })
+        "explanation":    explanation,
+        "trend_slope":    round(m, 2),
+        "avg_sales":      avg_sales
+    }
+
+    cache.set(cache_key, data, timeout=300)
+    print(f"CACHE MISS: {cache_key} — stored in Redis")
+    return JsonResponse(data)
+
 
 
 def export_csv(request):
