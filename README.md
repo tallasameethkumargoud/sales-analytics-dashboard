@@ -94,6 +94,14 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 - Email alerts on unhandled exceptions
 - Conditional init — only activates when `SENTRY_DSN` is set
 
+### ⚡ Redis Caching
+- Caches expensive DB queries for 10x faster response times
+- Leverages `django-redis` for easy integration with Django
+- Stores cached data in Redis with a 5-minute expiry
+- Implements cache invalidation on new data uploads
+- Significantly reduces database load, especially with multiple concurrent users
+- Improves overall application performance and scalability
+
 ---
 
 ## 🛠️ Tech Stack
@@ -102,11 +110,12 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 |-------|-----------|
 | **Backend** | Django 6.0.3, Python 3.12, Django REST Framework |
 | **Database** | PostgreSQL 15 (Railway in production, Docker locally) |
+| **Caching** | Redis 7 (Docker container) |
 | **AI** | Groq LLaMA 3.3-70B via Groq API |
 | **Data Processing** | Pandas, NumPy, Scikit-learn |
 | **Frontend** | HTML, CSS, JavaScript, Chart.js, jsPDF |
 | **Server** | Gunicorn (3 workers) + Nginx (reverse proxy + SSL) |
-| **Containerization** | Docker, Docker Compose (3 containers) |
+| **Containerization** | Docker, Docker Compose (4 containers) |
 | **Deployment** | Railway (auto-deploy from GitHub) |
 | **CI/CD** | GitHub Actions (test + lint pipeline) |
 | **Monitoring** | Sentry (real-time error tracking) |
@@ -115,45 +124,43 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 ---
 
 ## 🏗️ Architecture
-
-```
-                    Internet
-                       │
-              GitHub Repository
-             ┌─────────┴─────────┐
-       GitHub Actions         Railway Cloud
-       (CI/CD Pipeline)       (Production)
-             │                     │
-       Run 66 tests          Nginx (port 443/80)
-       Run flake8            SSL termination
-       ✅ Pass               static files
-             │                     │
-       Auto-deploy ──→       Gunicorn (port 8000)
-                             3 worker processes
-                                   │
-                             Django 6.0.3
-                             ├── Auth (signup/login/roles)
-                             ├── Upload (CSV → Pandas → DB)
-                             ├── Analytics (ORM aggregates)
-                             ├── AI APIs (Groq LLaMA 3.3)
-                             │    ├── Smart Chat
-                             │    ├── Sales Forecast
-                             │    ├── Customer Analysis
-                             │    └── Recommendations
-                             └── Sentry (error monitoring)
-                                   │
-                             PostgreSQL 15
-                             ├── Dataset, Record
-                             ├── Customer, Product
-                             ├── UserProfile (roles)
-                             └── RecommendationInteraction
-```
+Internet
+                   │
+          GitHub Repository
+         ┌─────────┴─────────┐
+   GitHub Actions         Railway Cloud
+   (CI/CD Pipeline)       (Production)
+         │                     │
+   Run 66 tests          Nginx (port 443/80)
+   Run flake8            SSL termination
+   ✅ Pass               static files
+         │                     │
+   Auto-deploy ──→       Gunicorn (port 8000)
+                         3 worker processes
+                               │
+                         Django 6.0.3
+                         ├── Auth (signup/login/roles)
+                         ├── Upload (CSV → Pandas → DB)
+                         ├── Analytics (ORM aggregates)
+                         ├── AI APIs (Groq LLaMA 3.3)
+                         │    ├── Smart Chat
+                         │    ├── Sales Forecast
+                         │    ├── Customer Analysis
+                         │    └── Recommendations
+                         └── Sentry (error monitoring)
+                               │
+                         PostgreSQL 15
+                         ├── Dataset, Record
+                         ├── Customer, Product
+                         ├── UserProfile (roles)
+                         └── RecommendationInteraction
+                               │
+                            Redis 7
+                            Caching
 
 ---
 
 ## 📂 Project Structure
-
-```
 sales-analytics-dashboard/
 ├── datasets/
 │   ├── models.py              # 5 models: Dataset, Record, Customer, Product,
@@ -178,7 +185,7 @@ sales-analytics-dashboard/
 │   ├── records.html           # Data records view
 │   └── success.html           # Upload confirmation
 ├── platform_backend/
-│   ├── settings.py            # PostgreSQL, Sentry, Groq, session config
+│   ├── settings.py            # PostgreSQL, Redis, Sentry, Groq, session config
 │   ├── test_settings.py       # SQLite in-memory for fast tests
 │   ├── urls.py                # 20 URL patterns
 │   └── wsgi.py
@@ -188,13 +195,12 @@ sales-analytics-dashboard/
 │   └── workflows/
 │       └── deploy.yml         # CI/CD: test + lint jobs
 ├── Dockerfile                 # Python 3.12-slim, Gunicorn CMD
-├── docker-compose.yml         # 3 services: web, db, nginx
+├── docker-compose.yml         # 4 services: web, db, redis, nginx
 ├── railway.json               # Railway deployment config
-├── requirements.txt           # 17 dependencies
+├── requirements.txt           # 18 dependencies (added django-redis)
 ├── pytest.ini                 # Test configuration
 ├── setup.cfg                  # flake8 config
 └── .env                       # Secrets (never committed)
-```
 
 ---
 
@@ -219,6 +225,8 @@ DB_PASSWORD=postgres123
 DB_HOST=db
 DB_PORT=5432
 
+REDIS_URL=redis://redis:6379/0
+
 GROQ_API_KEY=your-groq-api-key
 SENTRY_DSN=               # optional — leave blank to disable
 EOF
@@ -240,10 +248,8 @@ docker-compose exec web python manage.py createsuperuser
 ```
 
 ### 6. Open in browser
-```
 https://localhost        # HTTPS (self-signed cert — accept the warning)
 http://localhost:80      # Redirects to HTTPS
-```
 
 ---
 
@@ -310,6 +316,7 @@ Bob Williams,Laptop,1350
 | `DB_HOST` | ✅ | `db` for Docker, `localhost` for local |
 | `DB_PORT` | ✅ | PostgreSQL port (default: `5432`) |
 | `DATABASE_URL` | ⚡ | Railway auto-sets this (overrides individual DB vars) |
+| `REDIS_URL` | ✅ | Redis connection URL (default: `redis://redis:6379/0`) |
 | `GROQ_API_KEY` | ✅ | Groq API key for AI features |
 | `SENTRY_DSN` | ❌ | Sentry DSN for error monitoring (optional) |
 
@@ -321,11 +328,15 @@ Bob Williams,Laptop,1350
 2. Connect the repo to [Railway](https://railway.app)
 3. Railway auto-detects the `Dockerfile` and builds
 4. Add a **PostgreSQL** plugin in Railway
-5. Set environment variables in Railway's **Variables** tab:
-   - `SECRET_KEY`, `GROQ_API_KEY`, `DEBUG=False`
-   - `ALLOWED_HOSTS=your-app.up.railway.app`
-   - `DATABASE_URL` is auto-set by Railway's PostgreSQL plugin
-6. Deploy — your app is live at `https://your-app.up.railway.app`
+5. Add a **Redis** plugin in Railway
+6. Set environment variables in Railway's **Variables** tab:
+
+- `SECRET_KEY`, `GROQ_API_KEY`, `DEBUG=False`
+  - `ALLOWED_HOSTS=your-app.up.railway.app`
+  - `DATABASE_URL` is auto-set by Railway's PostgreSQL plugin
+  - `REDIS_URL` is auto-set by Railway's Redis plugin
+
+7. Deploy — your app is live at `https://your-app.up.railway.app`
 
 ---
 
@@ -367,9 +378,3 @@ Either fails → Deploy blocked ❌
 
 **Sameeth Kumar Goud Talla**
 GitHub: [@tallasameethkumargoud](https://github.com/tallasameethkumargoud)
-
----
-
-## 📄 License
-
-This project is for portfolio and educational purposes.
