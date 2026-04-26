@@ -201,7 +201,6 @@ sales-analytics-dashboard/
 ├── pytest.ini                 # Test configuration
 ├── setup.cfg                  # flake8 config
 └── .env                       # Secrets (never committed)
----
 
 ## ▶️ Run Locally with Docker
 
