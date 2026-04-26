@@ -124,43 +124,43 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 ---
 
 ## 🏗️ Architecture
-Internet
-                   │
-          GitHub Repository
-         ┌─────────┴─────────┐
-   GitHub Actions         Railway Cloud
-   (CI/CD Pipeline)       (Production)
-         │                     │
-   Run 66 tests          Nginx (port 443/80)
-   Run flake8            SSL termination
-   ✅ Pass               static files
-         │                     │
-   Auto-deploy ──→       Gunicorn (port 8000)
-                         3 worker processes
-                               │
-                         Django 6.0.3
-                         ├── Auth (signup/login/roles)
-                         ├── Upload (CSV → Pandas → DB)
-                         ├── Analytics (ORM aggregates)
-                         ├── AI APIs (Groq LLaMA 3.3)
-                         │    ├── Smart Chat
-                         │    ├── Sales Forecast
-                         │    ├── Customer Analysis
-                         │    └── Recommendations
-                         └── Sentry (error monitoring)
-                               │
-                         PostgreSQL 15
-                         ├── Dataset, Record
-                         ├── Customer, Product
-                         ├── UserProfile (roles)
-                         └── RecommendationInteraction
-                               │
-                            Redis 7
-                            Caching
 
----
+                    Internet
+                       │
+              GitHub Repository
+             ┌─────────┴─────────┐
+       GitHub Actions         Railway Cloud
+       (CI/CD Pipeline)       (Production)
+             │                     │
+       Run 66 tests          Nginx (port 443/80)
+       Run flake8            SSL termination
+       ✅ Pass               static files
+             │                     │
+       Auto-deploy ──→       Gunicorn (port 8000)
+                             3 worker processes
+                                   │
+                             Django 6.0.3
+                             ├── Auth (signup/login/roles)
+                             ├── Upload (CSV → Pandas → DB)
+                             ├── Analytics (ORM aggregates)
+                             ├── AI APIs (Groq LLaMA 3.3)
+                             │    ├── Smart Chat
+                             │    ├── Sales Forecast
+                             │    ├── Customer Analysis
+                             │    └── Recommendations
+                             └── Sentry (error monitoring)
+                                   │
+                             PostgreSQL 15
+                             ├── Dataset, Record
+                             ├── Customer, Product
+                             ├── UserProfile (roles)
+                             └── RecommendationInteraction
+                                   │
+                                Redis 7
+                                Caching
 
 ## 📂 Project Structure
+
 sales-analytics-dashboard/
 ├── datasets/
 │   ├── models.py              # 5 models: Dataset, Record, Customer, Product,
@@ -201,7 +201,6 @@ sales-analytics-dashboard/
 ├── pytest.ini                 # Test configuration
 ├── setup.cfg                  # flake8 config
 └── .env                       # Secrets (never committed)
-
 ---
 
 ## ▶️ Run Locally with Docker
