@@ -125,39 +125,43 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 
 ## 🏗️ Architecture
 
-                    Internet
-                       │
-              GitHub Repository
-             ┌─────────┴─────────┐
-       GitHub Actions         Railway Cloud
-       (CI/CD Pipeline)       (Production)
-             │                     │
-       Run 66 tests          Nginx (port 443/80)
-       Run flake8            SSL termination
-       ✅ Pass               static files
-             │                     │
-       Auto-deploy ──→       Gunicorn (port 8000)
-                             3 worker processes
-                                   │
-                             Django 6.0.3
-                             ├── Auth (signup/login/roles)
-                             ├── Upload (CSV → Pandas → DB)
-                             ├── Analytics (ORM aggregates)
-                             ├── AI APIs (Groq LLaMA 3.3)
-                             │    ├── Smart Chat
-                             │    ├── Sales Forecast
-                             │    ├── Customer Analysis
-                             │    └── Recommendations
-                             └── Sentry (error monitoring)
-                                   │
-                             PostgreSQL 15
-                             ├── Dataset, Record
-                             ├── Customer, Product
-                             ├── UserProfile (roles)
-                             └── RecommendationInteraction
-                                   │
-                                Redis 7
-                                Caching
+Internet
+                   │
+          GitHub Repository
+         ┌─────────┴─────────┐
+   GitHub Actions         Railway Cloud
+   (CI/CD Pipeline)       (Production)
+         │                     │
+   Run 66 tests          Nginx (port 443/80)
+   Run flake8            SSL termination
+   ✅ Pass               static files
+         │                     │
+   Auto-deploy ──→       Gunicorn (port 8000)
+                         3 worker processes
+                               │
+                         Django 6.0.3
+                         ├── Auth (signup/login/roles)
+                         ├── Upload (CSV → Pandas → DB)
+                         ├── Analytics (ORM aggregates)
+                         ├── AI APIs (Groq LLaMA 3.3)
+                         │    ├── Smart Chat
+                         │    ├── Sales Forecast
+                         │    ├── Customer Analysis
+                         │    └── Recommendations
+                         └── Sentry (error monitoring)
+                               │
+                         PostgreSQL 15
+                         ├── Dataset, Record
+                         ├── Customer, Product
+                         ├── UserProfile (roles)
+                         └── RecommendationInteraction
+                               │
+                            Redis 7
+                            Caching
+
+---
+
+## 📂 Project Structure
 
 sales-analytics-dashboard/
 │
@@ -205,6 +209,7 @@ sales-analytics-dashboard/
 ├── pytest.ini                 # Test configuration
 ├── setup.cfg                  # flake8 config
 └── .env                       # Secrets (never committed)
+
 ---
 
 ## ▶️ Run Locally with Docker
@@ -251,6 +256,7 @@ docker-compose exec web python manage.py createsuperuser
 ```
 
 ### 6. Open in browser
+
 https://localhost        # HTTPS (self-signed cert — accept the warning)
 http://localhost:80      # Redirects to HTTPS
 
@@ -333,51 +339,4 @@ Bob Williams,Laptop,1350
 4. Add a **PostgreSQL** plugin in Railway
 5. Add a **Redis** plugin in Railway
 6. Set environment variables in Railway's **Variables** tab:
-
-- `SECRET_KEY`, `GROQ_API_KEY`, `DEBUG=False`
-  - `ALLOWED_HOSTS=your-app.up.railway.app`
-  - `DATABASE_URL` is auto-set by Railway's PostgreSQL plugin
-  - `REDIS_URL` is auto-set by Railway's Redis plugin
-
-7. Deploy — your app is live at `https://your-app.up.railway.app`
-
----
-
-## 🔄 CI/CD Pipeline
-
-```yaml
-# .github/workflows/deploy.yml — runs on every push to main
-
-Job 1: 🧪 Run Tests
-  → Ubuntu + PostgreSQL 15 service
-  → pip install dependencies
-  → python manage.py migrate
-  → coverage run -m pytest (66 tests)
-
-Job 2: 🔍 Code Quality
-  → flake8 linting
-  → Code style enforcement
-
-Both pass → Railway auto-deploys ✅
-Either fails → Deploy blocked ❌
-```
-
----
-
-## 🗃️ Database Models
-
-| Model | Purpose | Key Fields |
-|-------|---------|------------|
-| `Dataset` | Uploaded CSV file | name, file, uploaded_by, uploaded_at |
-| `Customer` | Unique customer | name |
-| `Product` | Unique product | name |
-| `Record` | Individual sale | dataset, customer, product, amount |
-| `UserProfile` | Role assignment | user (OneToOne), role (admin/analyst/viewer) |
-| `RecommendationInteraction` | AI learning | user, product, action_type, interaction, impact |
-
----
-
-## 👤 Author
-
-**Sameeth Kumar Goud Talla**
-GitHub: [@tallasameethkumargoud](https://github.com/tallasameethkumargoud)
+   - `
