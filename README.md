@@ -159,49 +159,51 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
                                 Redis 7
                                 Caching
 
-## 📂 Project Structure
-
 sales-analytics-dashboard/
-├── datasets/
-│   ├── models.py              # 5 models: Dataset, Record, Customer, Product,
-│   │                          #   UserProfile, RecommendationInteraction
-│   ├── views.py               # All views + 4 AI API endpoints (694 lines)
-│   ├── decorators.py          # @role_required, @api_role_required
-│   ├── admin.py               # Django admin config
-│   ├── tests/
-│   │   ├── factories.py       # factory_boy test data factories
-│   │   ├── test_models.py     # 138 lines — model unit tests
-│   │   ├── test_auth.py       # 126 lines — auth integration tests
-│   │   ├── test_api.py        # 211 lines — API endpoint tests
-│   │   └── test_views.py      # 117 lines — view + role tests
-│   └── migrations/
-├── templates/
-│   ├── analytics.html         # Main dashboard (677 lines, Chart.js, AI panels)
-│   ├── upload.html            # CSV upload with preview (488 lines)
-│   ├── admin_panel.html       # User management (218 lines)
-│   ├── datasets.html          # Dataset history (329 lines)
-│   ├── login.html             # Login page
-│   ├── signup.html            # Registration with validation
-│   ├── records.html           # Data records view
-│   └── success.html           # Upload confirmation
-├── platform_backend/
-│   ├── settings.py            # PostgreSQL, Redis, Sentry, Groq, session config
-│   ├── test_settings.py       # SQLite in-memory for fast tests
-│   ├── urls.py                # 20 URL patterns
-│   └── wsgi.py
-├── nginx/
-│   └── nginx.conf             # HTTPS, reverse proxy, static file serving
-├── .github/
-│   └── workflows/
-│       └── deploy.yml         # CI/CD: test + lint jobs
-├── Dockerfile                 # Python 3.12-slim, Gunicorn CMD
-├── docker-compose.yml         # 4 services: web, db, redis, nginx
-├── railway.json               # Railway deployment config
-├── requirements.txt           # 18 dependencies (added django-redis)
-├── pytest.ini                 # Test configuration
-├── setup.cfg                  # flake8 config
-└── .env                       # Secrets (never committed)
-
+│
+├─ datasets/
+│  ├─ models.py               # 5 models: Dataset, Record, Customer, Product, UserProfile, RecommendationInteraction
+│  ├─ views.py                # All views + 4 AI API endpoints (694 lines)
+│  ├─ decorators.py           # @role_required, @api_role_required
+│  ├─ admin.py                # Django admin config
+│  ├─ tests/
+│  │  ├─ factories.py         # factory_boy test data factories
+│  │  ├─ test_models.py       # 138 lines — model unit tests
+│  │  ├─ test_auth.py         # 126 lines — auth integration tests
+│  │  ├─ test_api.py          # 211 lines — API endpoint tests
+│  │  └─ test_views.py        # 117 lines — view + role tests
+│  └─ migrations/
+│
+├─ templates/
+│  ├─ analytics.html          # Main dashboard (677 lines, Chart.js, AI panels)
+│  ├─ upload.html             # CSV upload with preview (488 lines)
+│  ├─ admin_panel.html        # User management (218 lines)
+│  ├─ datasets.html           # Dataset history (329 lines)
+│  ├─ login.html              # Login page
+│  ├─ signup.html             # Registration with validation
+│  ├─ records.html            # Data records view
+│  └─ success.html            # Upload confirmation
+│
+├─ platform_backend/
+│  ├─ settings.py             # PostgreSQL, Redis, Sentry, Groq, session config
+│  ├─ test_settings.py        # SQLite in-memory for fast tests
+│  ├─ urls.py                 # 20 URL patterns
+│  └─ wsgi.py
+│
+├─ nginx/
+│  └─ nginx.conf              # HTTPS, reverse proxy, static file serving
+│
+├─ .github/
+│  └─ workflows/
+│     └─ deploy.yml           # CI/CD: test + lint jobs
+│
+├─ Dockerfile                 # Python 3.12-slim, Gunicorn CMD
+├─ docker-compose.yml         # 4 services: web, db, redis, nginx
+├─ railway.json               # Railway deployment config
+├─ requirements.txt           # 18 dependencies (added django-redis)
+├─ pytest.ini                 # Test configuration
+├─ setup.cfg                  # flake8 config
+└─ .env                       # Secrets (never committed)
 ---
 
 ## ▶️ Run Locally with Docker
