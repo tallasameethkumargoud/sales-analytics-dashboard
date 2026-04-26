@@ -202,6 +202,8 @@ sales-analytics-dashboard/
 ├── setup.cfg                  # flake8 config
 └── .env                       # Secrets (never committed)
 
+---
+
 ## ▶️ Run Locally with Docker
 
 ### 1. Clone
