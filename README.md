@@ -1,4 +1,4 @@
-# 🚀 Data Operations Platform — AI-Powered Sales Analytics
+# 🚀 Data Operations Platform - AI-Powered Sales Analytics
 
 A production-grade, AI-powered **Sales Analytics SaaS Platform** built with Django, PostgreSQL, Docker, and Groq LLaMA 3.3 — complete with CI/CD pipeline, 66 automated tests, role-based access, Sentry monitoring, and Railway cloud deployment.
 
