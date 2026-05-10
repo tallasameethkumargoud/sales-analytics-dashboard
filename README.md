@@ -27,6 +27,8 @@ Users upload CSV sales data and instantly get:
 - **Smart recommendations** — per-product strategies that learn from your behavior
 - **Multi-user roles** — Admin, Analyst, and Viewer with granular permissions
 - **One-click exports** — CSV and PDF reports
+- **Background task processing** using Celery
+- **High-performance caching** using Redis
 
 ---
 
@@ -94,6 +96,7 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 - Email alerts on unhandled exceptions
 - Conditional init — only activates when `SENTRY_DSN` is set
 
+
 ### ⚡ Redis Caching
 - Caches expensive DB queries for 10x faster response times
 - Leverages `django-redis` for easy integration with Django
@@ -101,6 +104,12 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 - Implements cache invalidation on new data uploads
 - Significantly reduces database load, especially with multiple concurrent users
 - Improves overall application performance and scalability
+
+### 🔄 Celery Background Tasks
+- Offloads heavy AI and analytics tasks to the background
+- Improves user experience by preventing request blocking
+- Integrates with Redis as a message broker and result backend
+- Supports scalable asynchronous processing
 
 ---
 
@@ -111,6 +120,7 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 | **Backend** | Django 6.0.3, Python 3.12, Django REST Framework |
 | **Database** | PostgreSQL 15 (Railway in production, Docker locally) |
 | **Caching** | Redis 7 (Docker container) |
+| **Task Queue** | Celery with Redis broker/backend |
 | **AI** | Groq LLaMA 3.3-70B via Groq API |
 | **Data Processing** | Pandas, NumPy, Scikit-learn |
 | **Frontend** | HTML, CSS, JavaScript, Chart.js, jsPDF |
@@ -141,15 +151,13 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
                              3 worker processes
                                    │
                              Django 6.0.3
-                             ├── Auth (signup/login/roles)
-                             ├── Upload (CSV → Pandas → DB)
-                             ├── Analytics (ORM aggregates)
-                             ├── AI APIs (Groq LLaMA 3.3)
-                             │    ├── Smart Chat
-                             │    ├── Sales Forecast
-                             │    ├── Customer Analysis
-                             │    └── Recommendations
-                             └── Sentry (error monitoring)
+                              ├── Auth (signup/login/roles)
+                              ├── Upload (CSV → Pandas → DB)
+                              ├── Analytics (ORM aggregates)
+                              ├── AI APIs (Groq LLaMA 3.3)
+                              ├── Redis Caching
+                              ├── Celery Background Tasks
+                              └── Sentry (error monitoring)
                                    │
                              PostgreSQL 15
                              ├── Dataset, Record
@@ -273,17 +281,17 @@ coverage run -m pytest && coverage report   # With coverage
 |----------|--------|------|------|-------------|
 | `/upload/` | POST | ✅ | Any | Upload CSV dataset |
 | `/preview/` | POST | ✅ | Any | Preview CSV before upload |
-| `/api/analytics/` | GET | ✅ | Any | KPI metrics (revenue, AOV, top product) |
-| `/api/product-sales/` | GET | ✅ | Any | Product revenue data (supports `?min=&max=` filters) |
+| `/api/analytics/` | GET | ✅ | Any | KPI metrics |
+| `/api/product-sales/` | GET | ✅ | Any | Product revenue data |
 | `/api/sales-trend/` | GET | ✅ | Any | Daily revenue trend |
-| `/api/sales-forecast/` | GET | ✅ | Any | 7-day AI forecast + trend explanation |
+| `/api/sales-forecast/` | GET | ✅ | Any | 7-day AI forecast |
 | `/api/ai-chat/` | POST | ✅ | Any | Natural language data Q&A |
-| `/api/ai-sentiment/` | POST | ✅ | Any | Customer analysis + segmentation |
+| `/api/ai-sentiment/` | POST | ✅ | Any | Customer analysis |
 | `/api/ai-recommendations/` | POST | ✅ | Any | Personalized product strategies |
-| `/api/track-recommendation/` | POST | ✅ | Any | Track user interaction (click/apply/dismiss) |
-| `/api/update-user-role/` | POST | ✅ | Admin | Change a user's role |
-| `/api/delete-user/` | POST | ✅ | Admin | Delete a user account |
-| `/export/csv/` | GET | ✅ | Any | Download sales data as CSV |
+| `/api/track-recommendation/` | POST | ✅ | Any | Track user interaction |
+| `/api/update-user-role/` | POST | ✅ | Admin | Change user role |
+| `/api/delete-user/` | POST | ✅ | Admin | Delete user account |
+| `/export/csv/` | GET | ✅ | Any | Download CSV report |
 
 ---
 
@@ -375,7 +383,27 @@ Either fails → Deploy blocked ❌
 | `RecommendationInteraction` | AI learning | user, product, action_type, interaction, impact |
 
 ---
+## 📸 Screenshots
 
+- Analytics Dashboard
+- AI Chat Interface
+- Customer Segmentation
+- Forecasting Dashboard
+- Admin Panel
+- Mobile Responsive UI
+
+---
+
+## 📌 Future Improvements
+
+- Multi-select filters
+- Scheduled report generation
+- Real-time notifications
+- Advanced AI recommendation engine
+- Kubernetes deployment
+- Real-time streaming analytics
+
+---
 ## 👤 Author
 
 **Sameeth Kumar Goud Talla**
