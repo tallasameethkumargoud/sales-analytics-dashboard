@@ -161,25 +161,29 @@ LOGGING = {
 }
 
 # ─── Redis Cache ─────────────────────────────────────────────────
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+REDIS_URL = os.getenv("REDIS_URL")
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "SOCKET_CONNECT_TIMEOUT": 5,
-            "SOCKET_TIMEOUT": 5,
-            "IGNORE_EXCEPTIONS": True,
-        },
-        "KEY_PREFIX": "dataplatform",
-        "TIMEOUT": 300,
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "dataplatform",
+            "TIMEOUT": 300,
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
 
 # Use Redis for sessions too
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_CACHE_ALIAS = "default"
 
 CELERY_BROKER_URL = 'redis://localhost:6379'
