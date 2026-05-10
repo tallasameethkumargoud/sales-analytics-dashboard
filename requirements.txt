@@ -21,3 +21,4 @@ redis
 django-redis
 redis
 python-json-logger
+celery==5.2.7

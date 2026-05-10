@@ -3,6 +3,11 @@ import os
 
 import dj_database_url
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+print("DEBUG DB_HOST:", os.environ.get("DB_HOST"))
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -86,11 +91,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME':     os.environ.get('DB_NAME', 'data_platform'),
-            'USER':     os.environ.get('DB_USER', 'postgres'),
+            'NAME': os.environ.get('DB_NAME', 'data_platform'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
             'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres123'),
-            'HOST':     os.environ.get('DB_HOST', 'db'),
-            'PORT':     os.environ.get('DB_PORT', '5432'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
         }
     }
 
@@ -161,18 +166,24 @@ REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
+        "LOCATION": "redis://localhost:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "SOCKET_CONNECT_TIMEOUT": 5,
             "SOCKET_TIMEOUT": 5,
-            "IGNORE_EXCEPTIONS": True,  # fall back to DB if Redis is down
+            "IGNORE_EXCEPTIONS": True,
         },
         "KEY_PREFIX": "dataplatform",
-        "TIMEOUT": 300,  # 5 minutes default
+        "TIMEOUT": 300,
     }
 }
 
 # Use Redis for sessions too
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'

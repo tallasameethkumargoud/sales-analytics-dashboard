@@ -411,6 +411,9 @@ def get_groq_client():
 # ─── AI APIs ──────────────────────────────────────────────────────────────────
 
 def ai_chat_api(request):
+    import os
+    print("DEBUG KEY:", os.getenv("GROQ_API_KEY"))
+
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
     if request.method != "POST":
@@ -418,6 +421,13 @@ def ai_chat_api(request):
 
     body = json.loads(request.body)
     question = body.get("question", "").strip()
+    cache_key = f"ai_chat_{request.user.id}_{question}"
+    cached = cache.get(cache_key)
+
+    if cached:
+        print(f"✅ AI CACHE HIT: {cache_key}")
+        return JsonResponse({"answer": cached})
+    
     if not question:
         return JsonResponse({"error": "No question provided."}, status=400)
 
@@ -499,7 +509,14 @@ INSTRUCTIONS:
             "duration_ms": ai_duration,
             "model": "llama-3.3-70b-versatile",
         })
-        return JsonResponse({"answer": completion.choices[0].message.content.strip()})
+        answer = completion.choices[0].message.content.strip()
+
+        cache.set(cache_key, answer, timeout=300)  # 5 minutes
+
+        print(f"❌ AI CACHE MISS: {cache_key} — stored in Redis")
+
+        return JsonResponse({"answer": answer})
+    
     except Exception as e:
         ai_duration = round((time.time() - ai_start) * 1000, 1) if 'ai_start' in dir() else 0
         logger.exception("ai_chat_failed", extra={
