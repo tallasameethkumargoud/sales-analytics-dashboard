@@ -12,7 +12,7 @@ print("DEBUG DB_HOST:", os.environ.get("DB_HOST"))
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
-DEBUG = True  # Changed to True for debugging
+DEBUG = False  # Changed to True for debugging
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')]
 
 # ─── Sentry (AFTER DEBUG is defined) ─────────────────────────────
