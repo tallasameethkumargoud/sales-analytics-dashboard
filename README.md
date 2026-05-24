@@ -104,6 +104,11 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 - Implements cache invalidation on new data uploads
 - Significantly reduces database load, especially with multiple concurrent users
 - Improves overall application performance and scalability
+- Implemented Redis-backed dashboard KPI caching using Django cache framework
+- Cached frequently accessed analytics responses to reduce repeated database aggregation workloads
+- Validated cache reads/writes with Redis container integration
+- Improved scalability for concurrent dashboard traffic and AI analytics workloads
+
 
 ### 🔄 Celery Background Tasks
 - Offloads heavy AI and analytics tasks to the background
@@ -113,12 +118,29 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
 
 ---
 
+
+### 🗄️ PostgreSQL Performance Optimization
+
+Implemented production-grade PostgreSQL query optimization and analytics acceleration strategies:
+
+- Enabled `pg_stat_statements` for query observability and slow query analysis
+- Used `EXPLAIN ANALYZE` to profile ORM-generated SQL queries and identify sequential scans
+- Added optimized indexes for analytics workloads:
+  - `idx_record_created_at`
+  - `idx_record_customer_created`
+  - `idx_recent_records`
+- Implemented composite indexing for customer + time-series dashboard queries
+- Built a materialized view (`monthly_sales_summary`) for pre-aggregated KPI reporting and faster dashboard rendering
+- Reduced repeated aggregation workloads through Redis-backed caching strategies
+- Optimized analytical query patterns for scalable SaaS dashboard performance
+
+
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | Django 6.0.3, Python 3.12, Django REST Framework |
-| **Database** | PostgreSQL 15 (Railway in production, Docker locally) |
+| **Database** | PostgreSQL 15, pg_stat_statements, Materialized Views, Composite Indexing (Railway in production, Docker locally) |
 | **Caching** | Redis 7 (Docker container) |
 | **Task Queue** | Celery with Redis broker/backend |
 | **AI** | Groq LLaMA 3.3-70B via Groq API |
@@ -154,6 +176,9 @@ Both pass → Railway auto-deploys the new version. Bad code is blocked automati
                               ├── Auth (signup/login/roles)
                               ├── Upload (CSV → Pandas → DB)
                               ├── Analytics (ORM aggregates)
+                              ├── PostgreSQL Query Optimization
+                              ├── Materialized Analytics Views
+                              ├── Redis KPI Cache Layer
                               ├── AI APIs (Groq LLaMA 3.3)
                               ├── Redis Caching
                               ├── Celery Background Tasks
@@ -394,8 +419,13 @@ Either fails → Deploy blocked ❌
 
 ---
 
+
 ## 📌 Future Improvements
 
+- Automated materialized view refresh using Celery Beat
+- Advanced PostgreSQL partitioning for large-scale analytics workloads
+- BRIN indexing for high-volume time-series datasets
+- Distributed Redis caching layer
 - Multi-select filters
 - Scheduled report generation
 - Real-time notifications
@@ -404,6 +434,21 @@ Either fails → Deploy blocked ❌
 - Real-time streaming analytics
 
 ---
+
+
+## ⚡ Performance Engineering Highlights
+
+- Implemented PostgreSQL query profiling using `pg_stat_statements`
+- Analyzed ORM-generated SQL with `EXPLAIN ANALYZE`
+- Added composite and partial indexes for analytics-heavy queries
+- Built materialized views for pre-aggregated KPI reporting
+- Integrated Redis caching to reduce repeated dashboard aggregation costs
+- Optimized analytical workloads for scalable SaaS-style dashboard performance
+- Improved backend readiness for high-volume concurrent analytics traffic
+
+
+
+
 ## 👤 Author
 
 **Sameeth Kumar Goud Talla**
