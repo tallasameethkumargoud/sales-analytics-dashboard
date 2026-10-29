@@ -201,14 +201,16 @@ def analytics(request):
 def view_records(request):
     if not request.user.is_authenticated:
         return redirect("/login/")
-    records = Record.objects.all()
+    records = Record.objects.filter(dataset__uploaded_by=request.user)
     return render(request, "records.html", {"records": records, "user": request.user})
 
 
 def dataset_history(request):
     if not request.user.is_authenticated:
         return redirect("/login/")
-    datasets = Dataset.objects.all().order_by("-uploaded_at")
+    datasets = Dataset.objects.filter(
+        uploaded_by=request.user
+    ).order_by("-uploaded_at")
     return render(request, "datasets.html", {"datasets": datasets, "user": request.user})
 
 
