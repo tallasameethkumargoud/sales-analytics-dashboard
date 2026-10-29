@@ -71,4 +71,4 @@ jobs:
       - name: Install flake8
         run: pip install flake8
       - name: Run flake8
-        run: flake8 datasets/ platform_backend/ --max-line-length=150 --extend-ignore=E221,E241,E226,E272,E701,W292,E501,W503,F401,E711,E712 --exclude=migrations || true
+        run: flake8 datasets/ platform_backend/ --max-line-length=150 --extend-ignore=E221,E241,E226,E272,E701,W292,E501,W503,F401,E711,E712 --exclude=migrations
