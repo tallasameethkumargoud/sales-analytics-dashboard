@@ -1,3 +1,4 @@
+
 import json
 import pytest
 from django.test import TestCase, Client
@@ -147,21 +148,24 @@ class AIChatAPITest(TestCase):
 
     def test_requires_auth(self):
         self.client.logout()
-        response = self.client.post('/api/ai-chat/',
+        response = self.client.post(
+            '/api/ai-chat/',
             data=json.dumps({'question': 'test'}),
             content_type='application/json'
         )
         self.assertEqual(response.status_code, 401)
 
     def test_empty_question_returns_400(self):
-        response = self.client.post('/api/ai-chat/',
+        response = self.client.post(
+            '/api/ai-chat/',
             data=json.dumps({'question': ''}),
             content_type='application/json'
         )
         self.assertEqual(response.status_code, 400)
 
     def test_returns_json(self):
-        response = self.client.post('/api/ai-chat/',
+        response = self.client.post(
+            '/api/ai-chat/',
             data=json.dumps({'question': 'test question'}),
             content_type='application/json'
         )
