@@ -743,10 +743,15 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
                 {"role": "system", "content": "You are an elite personalized e-commerce AI. Respond with valid JSON only."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=2000,
+            max_completion_tokens=8000,
             temperature=0.2
         )
         raw = completion.choices[0].message.content.strip()
+
+        if completion.choices[0].finish_reason == "length":
+            raise ValueError(
+                "AI response was truncated. Increase the token limit or reduce the number of products."
+            )
         if "```json" in raw:
             raw = raw.split("```json")[1].split("```")[0].strip()
         elif "```" in raw:
