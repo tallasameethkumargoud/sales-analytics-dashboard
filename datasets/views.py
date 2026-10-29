@@ -6,6 +6,8 @@ from datetime import timedelta
 import json
 import urllib.request
 import csv
+import platform
+from django.utils import timezone
 
 
 
@@ -847,10 +849,6 @@ def delete_user_api(request):
     
 
 # ─── Health Check ────────────────────────────────────────────────────────────
-
-import platform
-from django.utils import timezone
-from datetime import datetime
 
 APP_START_TIME = timezone.now()
 
