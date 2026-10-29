@@ -9,11 +9,10 @@ from sentry_sdk.integrations.django import DjangoIntegration
 
 
 load_dotenv()
-print("DEBUG DB_HOST:", os.environ.get("DB_HOST"))
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key')
+SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = False  # Changed to True for debugging
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.99').split(',')]
 
@@ -92,7 +91,7 @@ else:
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.environ.get('DB_NAME', 'data_platform'),
             'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres123'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),,
             'HOST': os.environ.get('DB_HOST', 'localhost'),
             'PORT': os.environ.get('DB_PORT', '5432'),
         }
