@@ -9,8 +9,6 @@ import csv
 import platform
 from django.utils import timezone
 
-
-
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -109,7 +107,7 @@ def upload_dataset(request):
                 return JsonResponse({"error": f"Missing columns: {missing}"}, status=400)
             for _, row in df.iterrows():
                 customer, _ = Customer.objects.get_or_create(name=row["customer_name"])
-                product, _  = Product.objects.get_or_create(name=row["product"])
+                product, _ = Product.objects.get_or_create(name=row["product"])
                 Record.objects.create(
                     dataset=dataset,
                     customer=customer,
@@ -118,8 +116,8 @@ def upload_dataset(request):
                     product_name=row["product"],
                     amount=row["amount"],
                 )
-            
-            # ── Clear user's cache when new data is uploaded ─────────────────────
+
+            # ── Clear user's cache when new data is uploaded ──────────────────
             cache.delete(f"product_sales_{request.user.id}_None_None")
             cache.delete(f"sales_trend_{request.user.id}")
             cache.delete(f"sales_forecast_{request.user.id}")
@@ -138,8 +136,6 @@ def upload_dataset(request):
                 "error_type": type(e).__name__,
             })
             return JsonResponse({"error": str(e)}, status=500)
-        
-
 
 
 def preview_dataset(request):
@@ -174,9 +170,9 @@ def get_role_context(request):
     return {
         "user": request.user,
         "user_role": role,
-        "is_admin":   role == "admin",
+        "is_admin": role == "admin",
         "is_analyst": role == "analyst",
-        "is_viewer":  role == "viewer",
+        "is_viewer": role == "viewer",
     }
 
 
@@ -231,8 +227,8 @@ def analytics_api(request):
     print(f"❌ Cache MISS: {cache_key}")
     records = Record.objects.filter(dataset__uploaded_by=request.user)
     total_revenue = records.aggregate(total=Sum("amount"))["total"] or 0
-    avg_order     = records.aggregate(avg=Avg("amount"))["avg"] or 0
-    top_product   = (
+    avg_order = records.aggregate(avg=Avg("amount"))["avg"] or 0
+    top_product = (
         records.values("product")
         .annotate(total_sales=Sum("amount"))
         .order_by("-total_sales")
@@ -252,7 +248,7 @@ def sales_trend_api(request):
         return JsonResponse({"error": "Not authenticated."}, status=401)
 
     cache_key = f"sales_trend_{request.user.id}"
-    cached    = cache.get(cache_key)
+    cached = cache.get(cache_key)
     if cached:
         print(f"CACHE HIT: {cache_key}")
         return JsonResponse(cached)
@@ -284,7 +280,7 @@ def product_sales_api(request):
 
     # ── Cache key unique per user + filters ──────────────────────
     cache_key = f"product_sales_{request.user.id}_{min_amount}_{max_amount}"
-    cached    = cache.get(cache_key)
+    cached = cache.get(cache_key)
     if cached:
         print(f"CACHE HIT: {cache_key}")
         return JsonResponse(cached)
@@ -302,7 +298,7 @@ def product_sales_api(request):
     )
     data = {
         "products": [p["product__name"] for p in product_data],
-        "sales":    [p["total_sales"]   for p in product_data]
+        "sales": [p["total_sales"] for p in product_data]
     }
 
     # ── Store in cache for 5 minutes ─────────────────────────────
@@ -316,7 +312,7 @@ def sales_forecast_api(request):
         return JsonResponse({"error": "Not authenticated."}, status=401)
 
     cache_key = f"sales_forecast_{request.user.id}"
-    cached    = cache.get(cache_key)
+    cached = cache.get(cache_key)
     if cached:
         print(f"CACHE HIT: {cache_key}")
         return JsonResponse(cached)
@@ -348,13 +344,17 @@ def sales_forecast_api(request):
         predicted = max(0, round(m * future_x + b, 2))
         forecast_dates.append((last_date + timedelta(days=i)).strftime("%Y-%m-%d"))
         forecast_sales.append(predicted)
-    avg_sales  = round(sum(sales) / len(sales), 2)
+    avg_sales = round(sum(sales) / len(sales), 2)
     trend_word = "upward 📈" if m > 0 else "downward 📉"
     change_pct = round(abs(m) / avg_sales * 100, 1) if avg_sales else 0
-    if m > 50:       outlook = "strong growth"
-    elif m > 0:      outlook = "moderate growth"
-    elif m > -50:    outlook = "slight decline"
-    else:            outlook = "significant decline"
+    if m > 50:
+        outlook = "strong growth"
+    elif m > 0:
+        outlook = "moderate growth"
+    elif m > -50:
+        outlook = "slight decline"
+    else:
+        outlook = "significant decline"
     explanation = (
         f"Based on your last {len(sales)} days of data, your sales show a {trend_word} trend. "
         f"Revenue is changing by approximately ${abs(round(m, 2))} per day ({change_pct}% of your average). "
@@ -364,15 +364,14 @@ def sales_forecast_api(request):
     data = {
         "forecast_dates": forecast_dates,
         "forecast_sales": forecast_sales,
-        "explanation":    explanation,
-        "trend_slope":    round(m, 2),
-        "avg_sales":      avg_sales
+        "explanation": explanation,
+        "trend_slope": round(m, 2),
+        "avg_sales": avg_sales
     }
 
     cache.set(cache_key, data, timeout=300)
     print(f"CACHE MISS: {cache_key} — stored in Redis")
     return JsonResponse(data)
-
 
 
 def export_csv(request):
@@ -398,13 +397,13 @@ def export_csv(request):
 # ─── AI Helpers ───────────────────────────────────────────────────────────────
 
 def get_groq_client():
-    """Create Groq client with proper SSL handling for Railway."""
+    """Create Groq client with SSL certificate verification enabled."""
     import httpx
     from groq import Groq
     return Groq(
         api_key=settings.GROQ_API_KEY,
         http_client=httpx.Client(
-            verify=False,
+            verify=True,
             timeout=httpx.Timeout(30.0)
         )
     )
@@ -413,9 +412,6 @@ def get_groq_client():
 # ─── AI APIs ──────────────────────────────────────────────────────────────────
 
 def ai_chat_api(request):
-    import os
-    print("DEBUG KEY:", os.getenv("GROQ_API_KEY"))
-
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated."}, status=401)
     if request.method != "POST":
@@ -429,14 +425,14 @@ def ai_chat_api(request):
     if cached:
         print(f"✅ AI CACHE HIT: {cache_key}")
         return JsonResponse({"answer": cached})
-    
+
     if not question:
         return JsonResponse({"error": "No question provided."}, status=400)
 
-    records       = Record.objects.filter(dataset__uploaded_by=request.user)
+    records = Record.objects.filter(dataset__uploaded_by=request.user)
     total_revenue = records.aggregate(Sum("amount"))["amount__sum"] or 0
-    avg_order     = records.aggregate(Avg("amount"))["amount__avg"] or 0
-    total_orders  = records.count()
+    avg_order = records.aggregate(Avg("amount"))["amount__avg"] or 0
+    total_orders = records.count()
 
     product_data = list(
         records.values("product__name")
@@ -455,9 +451,9 @@ def ai_chat_api(request):
         .order_by("date")
     )
 
-    product_lines  = "\n".join([f"  {i+1}. {p['product__name']}: ${p['total_sales']:,.2f} | {p['order_count']} orders | ${p['avg_sale']:,.2f} avg" for i, p in enumerate(product_data)])
+    product_lines = "\n".join([f"  {i+1}. {p['product__name']}: ${p['total_sales']:,.2f} | {p['order_count']} orders | ${p['avg_sale']:,.2f} avg" for i, p in enumerate(product_data)])
     customer_lines = "\n".join([f"  {i+1}. {c['customer__name']}: ${c['total_spent']:,.2f} | {c['order_count']} orders | ${c['avg_spent']:,.2f} avg" for i, c in enumerate(customer_data)])
-    trend_lines    = "\n".join([f"  {t['date']}: ${t['daily_revenue']:,.2f}" for t in trend_data])
+    trend_lines = "\n".join([f"  {t['date']}: ${t['daily_revenue']:,.2f}" for t in trend_data])
 
     system_prompt = f"""You are an elite AI data analyst with direct access to a live sales database.
 Answer using ONLY the real data below. Be precise, use exact numbers.
@@ -498,7 +494,7 @@ INSTRUCTIONS:
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user",   "content": question}
+                {"role": "user", "content": question}
             ],
             max_tokens=500,
             temperature=0.3
@@ -518,7 +514,7 @@ INSTRUCTIONS:
         print(f"❌ AI CACHE MISS: {cache_key} — stored in Redis")
 
         return JsonResponse({"answer": answer})
-    
+
     except Exception as e:
         ai_duration = round((time.time() - ai_start) * 1000, 1) if 'ai_start' in dir() else 0
         logger.exception("ai_chat_failed", extra={
@@ -529,6 +525,7 @@ INSTRUCTIONS:
             "error_type": type(e).__name__,
         })
         return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
+
 
 def ai_sentiment_api(request):
     if not request.user.is_authenticated:
@@ -573,7 +570,7 @@ Use exact numbers and be data-driven."""
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are an expert customer analytics AI."},
-                {"role": "user",   "content": prompt}
+                {"role": "user", "content": prompt}
             ],
             max_tokens=600,
             temperature=0.3
@@ -605,11 +602,11 @@ def track_recommendation(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required."}, status=405)
 
-    body         = json.loads(request.body)
+    body = json.loads(request.body)
     product_name = body.get("product")
-    action_type  = body.get("action_type")
-    interaction  = body.get("interaction", "clicked")
-    impact       = body.get("impact", "medium")
+    action_type = body.get("action_type")
+    interaction = body.get("interaction", "clicked")
+    impact = body.get("impact", "medium")
 
     try:
         product = Product.objects.get(name=product_name)
@@ -638,7 +635,7 @@ def ai_recommendations_api(request):
         return JsonResponse({"error": "No data available."}, status=400)
 
     total_revenue = records.aggregate(Sum("amount"))["amount__sum"] or 0
-    avg_order     = records.aggregate(Avg("amount"))["amount__avg"] or 0
+    avg_order = records.aggregate(Avg("amount"))["amount__avg"] or 0
 
     product_data = list(
         records.values("product__name")
@@ -668,8 +665,8 @@ def ai_recommendations_api(request):
             interactions.filter(interaction__in=["clicked", "applied"])
             .values("product__name").annotate(cnt=Count("id")).order_by("-cnt")[:3]
         )
-        top_action_names  = [a["action_type"] for a in top_actions]
-        dismissed_names   = [a["action_type"] for a in dismissed_actions]
+        top_action_names = [a["action_type"] for a in top_actions]
+        dismissed_names = [a["action_type"] for a in dismissed_actions]
         top_product_names = [p["product__name"] for p in top_products]
 
         interaction_summary = f"""
@@ -744,7 +741,7 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "You are an elite personalized e-commerce AI. Respond with valid JSON only."},
-                {"role": "user",   "content": prompt}
+                {"role": "user", "content": prompt}
             ],
             max_tokens=2000,
             temperature=0.2
@@ -782,6 +779,7 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
         })
         return JsonResponse({"error": f"AI error: {type(e).__name__}: {str(e)}"}, status=500)
 
+
 # ─── Admin Panel ──────────────────────────────────────────────────────────────
 
 @role_required('admin')
@@ -790,23 +788,23 @@ def admin_panel(request):
     user_list = []
     for u in users:
         role = get_user_role(u)
-        record_count  = Record.objects.filter(dataset__uploaded_by=u).count()
+        record_count = Record.objects.filter(dataset__uploaded_by=u).count()
         dataset_count = Dataset.objects.filter(uploaded_by=u).count()
         user_list.append({
-            "id":            u.id,
-            "username":      u.username,
-            "email":         u.email,
-            "role":          role,
-            "record_count":  record_count,
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "role": role,
+            "record_count": record_count,
             "dataset_count": dataset_count,
-            "date_joined":   u.date_joined,
-            "last_login":    u.last_login,
+            "date_joined": u.date_joined,
+            "last_login": u.last_login,
         })
     return render(request, "admin_panel.html", {
         **get_role_context(request),
-        "user_list":      user_list,
-        "total_users":    users.count(),
-        "total_records":  Record.objects.count(),
+        "user_list": user_list,
+        "total_users": users.count(),
+        "total_records": Record.objects.count(),
         "total_datasets": Dataset.objects.count(),
     })
 
@@ -815,8 +813,8 @@ def admin_panel(request):
 def update_user_role(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required."}, status=405)
-    body     = json.loads(request.body)
-    user_id  = body.get("user_id")
+    body = json.loads(request.body)
+    user_id = body.get("user_id")
     new_role = body.get("role")
     if new_role not in ["admin", "analyst", "viewer"]:
         return JsonResponse({"error": "Invalid role."}, status=400)
@@ -836,7 +834,7 @@ def update_user_role(request):
 def delete_user_api(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST required."}, status=405)
-    body    = json.loads(request.body)
+    body = json.loads(request.body)
     user_id = body.get("user_id")
     try:
         target_user = User.objects.get(id=user_id)
@@ -846,7 +844,7 @@ def delete_user_api(request):
         return JsonResponse({"status": "deleted"})
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found."}, status=404)
-    
+
 
 # ─── Health Check ────────────────────────────────────────────────────────────
 
