@@ -231,7 +231,7 @@ def analytics_api(request):
     total_revenue = records.aggregate(total=Sum("amount"))["total"] or 0
     avg_order = records.aggregate(avg=Avg("amount"))["avg"] or 0
     top_product = (
-        records.values("product")
+        records.values("product__name")
         .annotate(total_sales=Sum("amount"))
         .order_by("-total_sales")
         .first()
