@@ -1,10 +1,12 @@
-import os
 
+import os
+from pathlib import Path
 
 import dj_database_url
-from pathlib import Path
 from dotenv import load_dotenv
-import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 
 load_dotenv()
 print("DEBUG DB_HOST:", os.environ.get("DB_HOST"))
@@ -17,9 +19,6 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,1
 
 # ─── Sentry (AFTER DEBUG is defined) ─────────────────────────────
 
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-
 SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
 if SENTRY_DSN:
     sentry_sdk.init(
@@ -29,7 +28,7 @@ if SENTRY_DSN:
         send_default_pii=True,
         environment="production" if not DEBUG else "development",
     )
-    
+
 CSRF_TRUSTED_ORIGINS = [
     'https://localhost',
     'http://localhost',
