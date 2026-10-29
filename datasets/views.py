@@ -491,7 +491,7 @@ INSTRUCTIONS:
         })
         ai_start = time.time()
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question}
@@ -567,7 +567,7 @@ Use exact numbers and be data-driven."""
         })
         ai_start = time.time()
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": "You are an expert customer analytics AI."},
                 {"role": "user", "content": prompt}
@@ -738,7 +738,7 @@ Prioritize user's preferred actions. Avoid dismissed actions. 2-3 actions per pr
         })
         ai_start = time.time()
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": "You are an elite personalized e-commerce AI. Respond with valid JSON only."},
                 {"role": "user", "content": prompt}
