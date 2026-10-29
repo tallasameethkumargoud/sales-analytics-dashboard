@@ -6,6 +6,7 @@ from datetime import timedelta
 import json
 import urllib.request
 import csv
+import hashlib
 import platform
 from django.utils import timezone
 
@@ -421,11 +422,12 @@ def ai_chat_api(request):
 
     body = json.loads(request.body)
     question = body.get("question", "").strip()
-    cache_key = f"ai_chat_{request.user.id}_{question}"
+    question_hash = hashlib.sha256(question.encode("utf-8")).hexdigest()
+    cache_key = f"ai_chat_{request.user.id}_{question_hash}"
     cached = cache.get(cache_key)
 
     if cached:
-        print(f"✅ AI CACHE HIT: {cache_key}")
+        logger.info("ai_chat_cache_hit")
         return JsonResponse({"answer": cached})
 
     if not question:
@@ -513,7 +515,7 @@ INSTRUCTIONS:
 
         cache.set(cache_key, answer, timeout=300)  # 5 minutes
 
-        print(f"❌ AI CACHE MISS: {cache_key} — stored in Redis")
+        logger.info("ai_chat_cache_miss")
 
         return JsonResponse({"answer": answer})
 
